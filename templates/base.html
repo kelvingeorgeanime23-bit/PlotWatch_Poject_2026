@@ -1,0 +1,280 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}PlotWatch{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <script
+      async
+      crossorigin="anonymous"
+      data-clerk-publishable-key="pk_test_dGlkeS1jb3JnaS04OS5jbGVyay5hY2NvdW50cy5kZXYk"
+      src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+      type="text/javascript"
+    ></script>
+
+    <style>
+      :root {
+        --pw-bg: #0d0d0d;
+        --pw-surface: #1a1a1a;
+        --pw-border: #2a2a2a;
+        --pw-gold: #c9a84c;
+        --pw-gold-light: #e8c97a;
+        --pw-white: #f5f5f0;
+        --pw-muted: #9a9a8a;
+        --pw-green: #4caf82;
+        --pw-red: #e05c5c;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--pw-bg);
+        color: var(--pw-white);
+        font-family: "DM Sans", sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: "Playfair Display", serif;
+        font-weight: 500;
+        color: var(--pw-white);
+      }
+
+      a {
+        color: var(--pw-gold);
+        text-decoration: none;
+      }
+      a:hover {
+        color: var(--pw-gold-light);
+      }
+
+      .pw-navbar {
+        background: var(--pw-surface);
+        border-bottom: 1px solid var(--pw-border);
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .pw-navbar .brand {
+        font-family: "Playfair Display", serif;
+        font-size: 1.4rem;
+        color: var(--pw-gold);
+        letter-spacing: 0.02em;
+      }
+
+      .btn-gold {
+        background: var(--pw-gold);
+        color: #0d0d0d;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 200ms ease;
+        touch-action: manipulation;
+        min-height: 44px;
+      }
+
+      .btn-gold:hover {
+        background: var(--pw-gold-light);
+        color: #0d0d0d;
+      }
+
+      .btn-gold:active {
+        color: #0d0d0d;
+      }
+
+      .btn-outline-gold {
+        background: transparent;
+        color: var(--pw-gold);
+        border: 1px solid var(--pw-gold);
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 200ms ease;
+        touch-action: manipulation;
+        min-height: 44px;
+      }
+
+      .btn-outline-gold:hover {
+        background: var(--pw-gold);
+        color: #0d0d0d;
+      }
+
+      .pw-card {
+        background: var(--pw-surface);
+        border: 1px solid var(--pw-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+      }
+
+      .badge-paid {
+        background: #4caf82;
+        color: #173404;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .badge-overdue {
+        background: #e05c5c;
+        color: #501313;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .badge-pending {
+        background: #2a2a2a;
+        color: #9a9a8a;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .text-gold {
+        color: var(--pw-gold);
+      }
+      .text-muted-pw {
+        color: var(--pw-muted);
+      }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <nav class="pw-navbar">
+      <a href="/" class="brand">PlotWatch</a>
+      <div id="nav-auth-area">
+        <span style="color: var(--pw-muted); font-size: 14px;">Loading...</span>
+      </div>
+    </nav>
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <script>
+      let clerkReady = false;
+
+      async function initClerk() {
+        if (!window.Clerk) {
+          console.error("Clerk script failed to load.");
+          document.getElementById("nav-auth-area").innerHTML = `
+            <span style="color: var(--pw-red); font-size: 14px;">Auth failed</span>
+          `;
+          return;
+        }
+
+        try {
+          await window.Clerk.load();
+          clerkReady = true;
+        } catch (e) {
+          console.error("Clerk load failed:", e);
+          document.getElementById("nav-auth-area").innerHTML = `
+            <span style="color: var(--pw-red); font-size: 14px;">Auth failed</span>
+          `;
+          return;
+        }
+
+        const authArea = document.getElementById("nav-auth-area");
+
+        if (window.Clerk.user && window.location.pathname === "/" && !window.location.hash) {
+          window.location.href = "/dashboard/";
+          return;
+        }
+
+        if (window.Clerk.user) {
+          const onAppPage =
+            window.location.pathname.startsWith("/tenant/") ||
+            window.location.pathname.startsWith("/landlord/");
+
+          if (onAppPage) {
+            authArea.innerHTML = "";
+          } else {
+            authArea.innerHTML = `
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:var(--pw-muted); font-size:14px;">${window.Clerk.user.primaryEmailAddress?.emailAddress || ""}</span>
+                <button class="btn-outline-gold" onclick="signOutUser()">Sign out</button>
+              </div>
+            `;
+          }
+        } else {
+          authArea.innerHTML = `
+            <div style="display:flex; gap:12px;">
+              <button class="btn-gold" onclick="signInUser()">Sign in</button>
+              <button class="btn-outline-gold" onclick="signUpUser()">Create account</button>
+            </div>
+          `;
+        }
+      }
+
+      function signInUser() {
+        if (!clerkReady) {
+          alert("Authentication is loading. Wait a moment and try again.");
+          return;
+        }
+        const redirectUrl = encodeURIComponent("http://127.0.0.1:8000/dashboard/");
+        window.location.href = `https://tidy-corgi-89.accounts.dev/sign-in?redirect_url=${redirectUrl}`;
+      }
+
+      function signUpUser() {
+        if (!clerkReady) {
+          alert("Authentication is loading. Wait a moment and try again.");
+          return;
+        }
+        const redirectUrl = encodeURIComponent("http://127.0.0.1:8000/dashboard/");
+        window.location.href = `https://tidy-corgi-89.accounts.dev/sign-up?redirect_url=${redirectUrl}`;
+      }
+
+      function signOutUser() {
+        if (!clerkReady || !window.Clerk?.signOut) {
+          return;
+        }
+        window.Clerk.signOut().then(() => {
+          window.location.href = "/";
+        });
+      }
+
+      if (document.readyState === "complete") {
+        initClerk();
+      } else {
+        window.addEventListener("load", initClerk);
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

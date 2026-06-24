@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}House {{ house.house_id }} - PlotWatch{% endblock %}
+
+{% block extra_css %}
+<style>
+	.pw-detail {
+		max-width: 680px;
+		margin: 0 auto;
+		padding: 1.5rem 1rem 3rem;
+	}
+
+	.pw-back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		color: var(--pw-muted);
+		font-size: 14px;
+		margin-bottom: 1rem;
+	}
+
+	.pw-back-link:hover {
+		color: var(--pw-gold);
+	}
+
+	/* ===== GALLERY VIEWER ===== */
+	.pw-gallery {
+		position: relative;
+		margin-bottom: 10px;
+	}
+
+	.pw-main-photo {
+		width: 100%;
+		height: 380px;
+		border-radius: 16px;
+		overflow: hidden;
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+	}
+
+	.pw-main-photo img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		border-radius: 12px;
+	}
+
+	.pw-main-photo .no-photo {
+		color: var(--pw-muted);
+		font-size: 14px;
+	}
+
+	/* Prev / Next Arrow Buttons */
+	.gallery-nav {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		background: rgba(13, 13, 13, 0.7);
+		border: 1px solid var(--pw-border);
+		color: var(--pw-white);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 200ms ease;
+		z-index: 10;
+		touch-action: manipulation;
+		backdrop-filter: blur(4px);
+	}
+
+	.gallery-nav:hover {
+		background: var(--pw-gold);
+		color: #0d0d0d;
+		border-color: var(--pw-gold);
+	}
+
+	.gallery-nav.prev {
+		left: 12px;
+	}
+
+	.gallery-nav.next {
+		right: 12px;
+	}
+
+	/* Image counter */
+	.gallery-counter {
+		position: absolute;
+		bottom: 16px;
+		right: 16px;
+		background: rgba(13, 13, 13, 0.75);
+		color: var(--pw-white);
+		font-size: 12px;
+		padding: 4px 12px;
+		border-radius: 20px;
+		border: 1px solid var(--pw-border);
+		backdrop-filter: blur(4px);
+	}
+
+	/* ===== FLOATING THUMBNAIL STRIP ===== */
+	.pw-thumb-strip {
+		display: flex;
+		gap: 10px;
+		overflow-x: auto;
+		padding: 12px;
+		margin-bottom: 1.5rem;
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 14px;
+		scrollbar-width: thin;
+		scrollbar-color: var(--pw-border) transparent;
+	}
+
+	.pw-thumb-strip::-webkit-scrollbar {
+		height: 6px;
+	}
+
+	.pw-thumb-strip::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.pw-thumb-strip::-webkit-scrollbar-thumb {
+		background: var(--pw-border);
+		border-radius: 3px;
+	}
+
+	.pw-thumb-strip img {
+		width: 80px;
+		height: 80px;
+		object-fit: cover;
+		background: var(--pw-bg);
+		border-radius: 10px;
+		border: 2px solid transparent;
+		cursor: pointer;
+		flex-shrink: 0;
+		touch-action: manipulation;
+		transition: all 200ms ease;
+	}
+
+	.pw-thumb-strip img:hover {
+		transform: translateY(-2px);
+		border-color: var(--pw-muted);
+	}
+
+	.pw-thumb-strip img.active {
+		border-color: var(--pw-gold);
+		box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+	}
+
+	/* ===== DETAIL SECTIONS ===== */
+	.pw-detail-header h1 {
+		font-size: 1.4rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.pw-detail-header .house-type {
+		color: var(--pw-muted);
+		font-size: 14px;
+		margin-bottom: 0.75rem;
+	}
+
+	.pw-detail-price {
+		font-family: "Playfair Display", serif;
+		font-size: 1.6rem;
+		color: var(--pw-gold);
+		margin-bottom: 0.25rem;
+	}
+
+	.pw-detail-deposit {
+		color: var(--pw-muted);
+		font-size: 13px;
+		margin-bottom: 1.25rem;
+	}
+
+	.pw-detail-section {
+		margin-bottom: 1.5rem;
+	}
+
+	.pw-detail-section h3 {
+		font-size: 1rem;
+		margin-bottom: 0.5rem;
+		color: var(--pw-white);
+	}
+
+	.pw-detail-section p {
+		color: var(--pw-muted);
+		font-size: 14px;
+		line-height: 1.7;
+		white-space: pre-line;
+	}
+
+	.pw-video-wrap video {
+		width: 100%;
+		border-radius: 12px;
+		background: #000;
+	}
+
+	.pw-contact-card {
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		padding: 1rem 1.1rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 1rem;
+	}
+
+	.pw-icon-btn {
+		width: 40px;
+		height: 40px;
+		border-radius: 8px;
+		border: 1px solid var(--pw-border);
+		background: transparent;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 200ms ease;
+		color: var(--pw-white);
+		touch-action: manipulation;
+	}
+
+	.pw-icon-btn:hover {
+		border-color: var(--pw-gold);
+		color: var(--pw-gold);
+	}
+
+	.pw-icon-btn.call:hover {
+		border-color: var(--pw-green);
+		color: var(--pw-green);
+	}
+
+	.pw-icon-btn.whatsapp:hover {
+		border-color: #25d366;
+		color: #25d366;
+	}
+
+	/* Responsive */
+	@media (max-width: 480px) {
+		.pw-main-photo {
+			height: 280px;
+			padding: 16px;
+		}
+
+		.gallery-nav {
+			width: 36px;
+			height: 36px;
+		}
+
+		.gallery-nav.prev {
+			left: 8px;
+		}
+
+		.gallery-nav.next {
+			right: 8px;
+		}
+
+		.pw-thumb-strip img {
+			width: 64px;
+			height: 64px;
+		}
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pw-detail">
+
+	<a href="{% url 'houses_list' %}" class="pw-back-link">
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<line x1="19" y1="12" x2="5" y2="12"/>
+			<polyline points="12 19 5 12 12 5"/>
+		</svg>
+		Back to all houses
+	</a>
+
+	<!-- GALLERY VIEWER -->
+	<div class="pw-gallery">
+		<div class="pw-main-photo">
+			{% if house.photo %}
+				<img id="main-photo" src="{{ house.photo.url }}" alt="House {{ house.house_id }}">
+			{% elif gallery_photos %}
+				<img id="main-photo" src="{{ gallery_photos.0.image.url }}" alt="House {{ house.house_id }}">
+			{% else %}
+				<span class="no-photo">No photo yet</span>
+			{% endif %}
+		</div>
+
+		<!-- Prev Button -->
+		<button class="gallery-nav prev" onclick="prevPhoto()" aria-label="Previous photo">
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="15 18 9 12 15 6"/>
+			</svg>
+		</button>
+
+		<!-- Next Button -->
+		<button class="gallery-nav next" onclick="nextPhoto()" aria-label="Next photo">
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="9 18 15 12 9 6"/>
+			</svg>
+		</button>
+
+		<!-- Counter -->
+		<span class="gallery-counter" id="photo-counter">1 / 1</span>
+	</div>
+
+	<!-- FLOATING THUMBNAIL STRIP -->
+	{% if house.photo or gallery_photos %}
+	<div class="pw-thumb-strip" id="thumb-strip">
+		{% if house.photo %}
+			<img src="{{ house.photo.url }}" class="active" onclick="setMainPhoto(this)" alt="">
+		{% endif %}
+		{% for photo in gallery_photos %}
+			<img src="{{ photo.image.url }}" {% if not house.photo and forloop.first %}class="active"{% endif %} onclick="setMainPhoto(this)" alt="">
+		{% endfor %}
+	</div>
+	{% endif %}
+
+	<div class="pw-detail-header">
+		<h1>House {{ house.house_id }}</h1>
+		<div class="house-type">{{ house.get_house_type_display }} · {{ house.get_electricity_type_display }} · {{ house.landlord.full_name }}</div>
+	</div>
+
+	<div class="pw-detail-price">KSh {{ house.monthly_rent|floatformat:0|intcomma }} / month</div>
+	<div class="pw-detail-deposit">Deposit: KSh {{ house.deposit_amount|floatformat:0|intcomma }}</div>
+
+	{% if house.description %}
+	<div class="pw-detail-section">
+		<h3>About this house</h3>
+		<p>{{ house.description }}</p>
+	</div>
+	{% endif %}
+
+	{% if house.video %}
+	<div class="pw-detail-section pw-video-wrap">
+		<h3>Video walkthrough</h3>
+		<video controls playsinline preload="metadata" {% if house.photo %}poster="{{ house.photo.url }}"{% endif %}>
+			<source src="{{ house.video.url }}">
+			Your browser does not support video playback.
+		</video>
+	</div>
+	{% endif %}
+
+	<div class="pw-contact-card">
+		<div>
+			<p style="font-size: 14px; font-weight: 500; color: var(--pw-white); margin-bottom: 2px;">Vanessa</p>
+			<p style="font-size: 12px; color: var(--pw-muted);">Caretaker · Send deposit here</p>
+		</div>
+		<div style="display: flex; gap: 8px;">
+			<a href="tel:+254714390982" class="pw-icon-btn call" aria-label="Call caretaker">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.52 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+				</svg>
+			</a>
+			<a href="https://wa.me/254714390982" target="_blank" rel="noopener noreferrer" class="pw-icon-btn whatsapp" aria-label="WhatsApp caretaker">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+					<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+				</svg>
+			</a>
+			<a href="https://www.google.com/maps/dir/?api=1&destination=-1.295063,36.7485343" target="_blank" rel="noopener noreferrer" class="pw-icon-btn directions" aria-label="Get directions to the plot">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+					<circle cx="12" cy="10" r="3"/>
+				</svg>
+			</a>
+		</div>
+	</div>
+
+</div>
+
+{% block extra_js %}
+<script>
+	// Collect all photo sources
+	const mainPhoto = document.getElementById('main-photo');
+	const thumbs = document.querySelectorAll('.pw-thumb-strip img');
+	const counter = document.getElementById('photo-counter');
+	let currentIndex = 0;
+
+	// Build photos array
+	const photos = [];
+	thumbs.forEach(function(thumb) {
+		photos.push(thumb.src);
+	});
+
+	// Set initial counter
+	function updateCounter() {
+		if (photos.length > 0) {
+			counter.textContent = (currentIndex + 1) + ' / ' + photos.length;
+		} else {
+			counter.textContent = '';
+		}
+	}
+
+	// Update active thumbnail
+	function updateActiveThumb() {
+		thumbs.forEach(function(thumb, idx) {
+			if (idx === currentIndex) {
+				thumb.classList.add('active');
+				thumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+			} else {
+				thumb.classList.remove('active');
+			}
+		});
+	}
+
+	function setMainPhoto(imgEl) {
+		mainPhoto.src = imgEl.src;
+		// Find index of clicked thumb
+		thumbs.forEach(function(thumb, idx) {
+			if (thumb === imgEl) {
+				currentIndex = idx;
+			}
+		});
+		updateActiveThumb();
+		updateCounter();
+	}
+
+	function nextPhoto() {
+		if (photos.length === 0) return;
+		currentIndex = (currentIndex + 1) % photos.length;
+		mainPhoto.src = photos[currentIndex];
+		updateActiveThumb();
+		updateCounter();
+	}
+
+	function prevPhoto() {
+		if (photos.length === 0) return;
+		currentIndex = (currentIndex - 1 + photos.length) % photos.length;
+		mainPhoto.src = photos[currentIndex];
+		updateActiveThumb();
+		updateCounter();
+	}
+
+	// Keyboard navigation
+	document.addEventListener('keydown', function(e) {
+		if (e.key === 'ArrowRight') nextPhoto();
+		if (e.key === 'ArrowLeft') prevPhoto();
+	});
+
+	// Initialize
+	updateCounter();
+</script>
+{% endblock %}
+
+{% endblock %}

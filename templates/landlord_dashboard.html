@@ -1,0 +1,969 @@
+{% extends 'base.html' %}
+
+{% block title %}PlotWatch - Landlord Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+	.pw-dashboard {
+		max-width: 680px;
+		margin: 0 auto;
+		padding: 1.5rem 1rem 6rem;
+	}
+
+	/* Profile row */
+	.pw-profile-row {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		width: 100%;
+		background: none;
+		border: none;
+		padding: 0;
+		margin-bottom: 1.5rem;
+		cursor: pointer;
+		text-align: left;
+		color: inherit;
+		font: inherit;
+		touch-action: manipulation;
+	}
+
+	.pw-avatar {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: rgba(201, 168, 76, 0.15);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+		flex-shrink: 0;
+		color: var(--pw-gold);
+		font-weight: 600;
+		font-size: 18px;
+		font-family: 'DM Sans', sans-serif;
+	}
+
+	.pw-avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.pw-chevron {
+		margin-left: auto;
+		color: var(--pw-muted);
+		flex-shrink: 0;
+	}
+
+	.pw-welcome h2 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+	.pw-welcome p { color: var(--pw-muted); font-size: 14px; margin: 0; }
+
+	/* Summary row */
+	.pw-summary-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+		margin-bottom: 1.5rem;
+	}
+
+	.pw-summary-card {
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		padding: 1rem 0.75rem;
+		text-align: center;
+	}
+
+	.pw-summary-card .number {
+		font-family: "Playfair Display", serif;
+		font-size: 1.6rem;
+		color: var(--pw-gold);
+		font-weight: 500;
+		line-height: 1.2;
+		margin-bottom: 4px;
+	}
+
+	.pw-summary-card .label {
+		font-size: 11px;
+		color: var(--pw-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	/* Income row */
+	.pw-income-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+		margin-bottom: 1.5rem;
+	}
+
+	.pw-income-card {
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		padding: 1rem 0.75rem;
+		text-align: center;
+	}
+
+	.pw-income-card .amount {
+		font-family: "Playfair Display", serif;
+		font-size: 1.2rem;
+		font-weight: 500;
+		line-height: 1.2;
+		margin-bottom: 4px;
+	}
+
+	.pw-income-card .amount.expected { color: var(--pw-white); }
+	.pw-income-card .amount.collected { color: var(--pw-green); }
+	.pw-income-card .amount.overdue { color: var(--pw-red); }
+
+	.pw-income-card .label {
+		font-size: 11px;
+		color: var(--pw-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	/* Section header */
+	.pw-section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+
+	.pw-section-header h3 {
+		font-family: "DM Sans", sans-serif;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--pw-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		margin: 0;
+	}
+
+	/* House card */
+	.pw-house-card {
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		padding: 1.1rem;
+		margin-bottom: 10px;
+		transition: border-color 200ms ease;
+	}
+
+	.pw-house-card:hover {
+		border-color: var(--pw-gold);
+	}
+
+	.pw-house-card .house-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+
+	.pw-house-card .house-id {
+		font-size: 15px;
+		font-weight: 500;
+		color: var(--pw-white);
+	}
+
+	.pw-house-card .house-type {
+		font-size: 12px;
+		color: var(--pw-muted);
+	}
+
+	.pw-house-card .house-meta {
+		display: flex;
+		gap: 12px;
+		font-size: 12px;
+		color: var(--pw-muted);
+		margin-bottom: 0.75rem;
+	}
+
+	.pw-house-card .tenant-info {
+		background: var(--pw-bg);
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		margin-top: 0.5rem;
+	}
+
+	.pw-house-card .tenant-info .tenant-name {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--pw-white);
+		margin-bottom: 2px;
+	}
+
+	.pw-house-card .tenant-info .tenant-email {
+		font-size: 12px;
+		color: var(--pw-muted);
+	}
+
+	.pw-house-card .tenant-info .tenant-move-in {
+		font-size: 12px;
+		color: var(--pw-muted);
+		margin-top: 4px;
+	}
+
+	.pw-house-card .bill-row {
+		display: flex;
+		gap: 12px;
+		margin-top: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.pw-house-card .bill-pill {
+		font-size: 11px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-weight: 500;
+	}
+
+	.bill-pill.paid {
+		background: rgba(76, 175, 130, 0.15);
+		color: #4caf82;
+	}
+
+	.bill-pill.pending {
+		background: rgba(154, 154, 138, 0.15);
+		color: #9a9a8a;
+	}
+
+	.bill-pill.overdue {
+		background: rgba(224, 92, 92, 0.15);
+		color: #e05c5c;
+	}
+
+	.pw-detail-link {
+		display: inline-block;
+		margin-top: 0.65rem;
+		font-size: 12px;
+		color: var(--pw-gold);
+		cursor: pointer;
+		background: none;
+		border: none;
+		padding: 0;
+		font-family: inherit;
+		touch-action: manipulation;
+	}
+
+	.pw-detail-link:hover {
+		color: var(--pw-gold-light);
+	}
+
+	.pw-listing-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 0.75rem;
+		font-size: 12px;
+		color: var(--pw-gold);
+	}
+
+	.pw-listing-link:hover {
+		color: var(--pw-gold-light);
+	}
+
+	/* Empty state */
+	.pw-empty {
+		text-align: center;
+		padding: 2rem 1rem;
+		color: var(--pw-muted);
+		font-size: 14px;
+	}
+
+	/* Loading skeleton */
+	.pw-skeleton {
+		background: linear-gradient(90deg, var(--pw-surface) 25%, #222 50%, var(--pw-surface) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s infinite;
+		border-radius: 8px;
+		height: 60px;
+		margin-bottom: 8px;
+	}
+
+	@keyframes shimmer {
+		0% { background-position: 200% 0; }
+		100% { background-position: -200% 0; }
+	}
+
+	/* Bottom nav */
+	.pw-bottom-nav {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: var(--pw-surface);
+		border-top: 1px solid var(--pw-border);
+		display: flex;
+		align-items: center;
+		justify-content: space-around;
+		padding: 0.6rem 0 0.8rem;
+		z-index: 100;
+	}
+
+	.pw-nav-item {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		font-size: 11px;
+		color: var(--pw-muted);
+		cursor: pointer;
+		padding: 4px 16px;
+		border-radius: 8px;
+		transition: color 200ms ease;
+		touch-action: manipulation;
+		min-width: 56px;
+		min-height: 44px;
+		justify-content: center;
+		border: none;
+		background: none;
+	}
+
+	.pw-nav-item.active {
+		color: var(--pw-gold);
+	}
+
+	.pw-nav-item svg {
+		width: 22px;
+		height: 22px;
+	}
+
+	.pw-nav-badge {
+		position: absolute;
+		top: -2px;
+		right: 6px;
+		background: var(--pw-red);
+		color: #fff;
+		font-size: 10px;
+		font-weight: 600;
+		min-width: 16px;
+		height: 16px;
+		border-radius: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 4px;
+	}
+
+	/* Status badge */
+	.status-badge {
+		font-size: 11px;
+		font-weight: 500;
+		border-radius: 5px;
+		padding: 3px 9px;
+		display: inline-block;
+	}
+
+	.status-occupied {
+		background: rgba(76, 175, 130, 0.15);
+		color: #4caf82;
+	}
+
+	.status-vacant {
+		background: rgba(154, 154, 138, 0.15);
+		color: #9a9a8a;
+	}
+
+	/* Open issues badge */
+	.issues-badge {
+		background: rgba(224, 92, 92, 0.15);
+		color: #e05c5c;
+		font-size: 11px;
+		font-weight: 500;
+		border-radius: 5px;
+		padding: 3px 9px;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
+		touch-action: manipulation;
+	}
+
+	/* Info sheet, shared by profile, issue lists, and house details */
+	.pw-modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.75);
+		z-index: 200;
+		display: flex;
+		align-items: flex-end;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 250ms ease;
+	}
+
+	.pw-modal-overlay.open {
+		opacity: 1;
+		pointer-events: all;
+	}
+
+	.pw-modal-sheet {
+		background: #1A1A1A;
+		border-radius: 20px 20px 0 0;
+		border-top: 1px solid var(--pw-border);
+		padding: 1.5rem 1.25rem 2rem;
+		width: 100%;
+		max-height: 90vh;
+		overflow-y: auto;
+		transform: translateY(100%);
+		transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.pw-modal-overlay.open .pw-modal-sheet {
+		transform: translateY(0);
+	}
+
+	.pw-modal-handle {
+		width: 36px;
+		height: 4px;
+		background: var(--pw-border);
+		border-radius: 2px;
+		margin: 0 auto 1.25rem;
+	}
+
+	.pw-modal-title {
+		font-size: 1.1rem;
+		font-weight: 500;
+		margin-bottom: 1.25rem;
+		color: var(--pw-white);
+		font-family: 'Playfair Display', serif;
+	}
+
+	.pw-detail-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.85rem 0;
+		border-bottom: 1px solid var(--pw-border);
+		gap: 12px;
+	}
+
+	.pw-detail-row:last-of-type {
+		border-bottom: none;
+	}
+
+	.pw-detail-row .label {
+		font-size: 13px;
+		color: var(--pw-muted);
+	}
+
+	.pw-detail-row .value {
+		font-size: 14px;
+		color: var(--pw-white);
+		font-weight: 500;
+		text-align: right;
+	}
+
+	.pw-issue-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.pw-issue-row {
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-border);
+		border-radius: 10px;
+		padding: 0.85rem 1rem;
+	}
+
+	.pw-issue-row .issue-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: 4px;
+	}
+
+	.pw-issue-row .issue-category {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--pw-white);
+	}
+
+	.pw-issue-row .issue-date {
+		font-size: 11px;
+		color: var(--pw-muted);
+	}
+
+	.pw-issue-row .issue-description {
+		font-size: 13px;
+		color: var(--pw-muted);
+		line-height: 1.5;
+		margin-bottom: 4px;
+	}
+
+	.pw-issue-row .issue-source {
+		font-size: 11px;
+		color: var(--pw-gold);
+	}
+
+	.pw-submit-btn {
+		width: 100%;
+		background: var(--pw-gold);
+		color: #0D0D0D;
+		border: none;
+		border-radius: 10px;
+		padding: 14px;
+		font-family: 'DM Sans', sans-serif;
+		font-size: 15px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 200ms ease;
+		touch-action: manipulation;
+		min-height: 52px;
+	}
+
+	.pw-submit-btn:hover { background: var(--pw-gold-light); }
+
+	.pw-close-btn {
+		width: 100%;
+		background: none;
+		border: none;
+		color: var(--pw-muted);
+		font-size: 14px;
+		padding: 0.75rem;
+		cursor: pointer;
+		margin-top: 0.75rem;
+		touch-action: manipulation;
+		min-height: 44px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.pw-skeleton { animation: none; }
+		.pw-modal-sheet { transition: none; }
+		.pw-modal-overlay { transition: none; }
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Loading state -->
+<div id="pw-loading" style="max-width:680px;margin:0 auto;padding:1.5rem 1rem;">
+	<div class="pw-skeleton"></div>
+	<div class="pw-skeleton" style="height:120px;"></div>
+	<div class="pw-skeleton" style="height:120px;"></div>
+</div>
+
+<!-- Dashboard (hidden until Clerk loads) -->
+<div id="pw-dashboard-content" class="pw-dashboard" style="display:none;">
+
+	<!-- Profile -->
+	<button class="pw-profile-row" onclick="showLandlordProfileSheet()" aria-label="View your profile">
+		<div class="pw-avatar">
+			<img id="pw-avatar-img" src="" alt="" style="display:none;">
+			<span id="pw-avatar-fallback">?</span>
+		</div>
+		<div class="pw-welcome">
+			<h2>Hello, <span id="pw-first-name">there</span></h2>
+			<p id="pw-date"></p>
+		</div>
+		<svg class="pw-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<polyline points="9 18 15 12 9 6"/>
+		</svg>
+	</button>
+
+	<!-- Summary cards -->
+	<div class="pw-summary-row">
+		<div class="pw-summary-card">
+			<div class="number" id="summary-houses">0</div>
+			<div class="label">Houses</div>
+		</div>
+		<div class="pw-summary-card">
+			<div class="number" id="summary-occupied">0</div>
+			<div class="label">Occupied</div>
+		</div>
+		<div class="pw-summary-card">
+			<div class="number" id="summary-issues">0</div>
+			<div class="label">Open Issues</div>
+		</div>
+	</div>
+
+	<!-- Income row -->
+	<div class="pw-section-header">
+		<h3>This Month's Rent</h3>
+	</div>
+	<div class="pw-income-row">
+		<div class="pw-income-card">
+			<div class="amount expected" id="income-expected">KSh 0</div>
+			<div class="label">Expected</div>
+		</div>
+		<div class="pw-income-card">
+			<div class="amount collected" id="income-collected">KSh 0</div>
+			<div class="label">Collected</div>
+		</div>
+		<div class="pw-income-card">
+			<div class="amount overdue" id="income-overdue">KSh 0</div>
+			<div class="label">Overdue</div>
+		</div>
+	</div>
+
+	<!-- Houses section -->
+	<div class="pw-section-header" id="your-houses-section">
+		<h3>Your Houses</h3>
+	</div>
+
+	<div id="houses-container">
+		<!-- Houses injected here -->
+	</div>
+
+</div>
+
+<!-- Bottom navigation -->
+<nav class="pw-bottom-nav" role="navigation" aria-label="Main navigation">
+	<button class="pw-nav-item active" aria-label="Home" aria-current="page" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+			<polyline points="9 22 9 12 15 12 15 22"/>
+		</svg>
+		Home
+	</button>
+	<button class="pw-nav-item" aria-label="Houses" onclick="document.getElementById('your-houses-section').scrollIntoView({behavior:'smooth'})">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+		</svg>
+		Houses
+	</button>
+	<button class="pw-nav-item" id="issues-nav-btn" aria-label="Issues" onclick="showAllIssuesSheet()">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+		</svg>
+		Issues
+		<span class="pw-nav-badge" id="issues-nav-badge" style="display:none;">0</span>
+	</button>
+	<button class="pw-nav-item" aria-label="Sign out" onclick="signOutUser()">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+			<polyline points="16 17 21 12 16 7"/>
+			<line x1="21" y1="12" x2="9" y2="12"/>
+		</svg>
+		Sign out
+	</button>
+</nav>
+
+<!-- Info sheet, shared by profile, issue lists, and house details -->
+<div class="pw-modal-overlay" id="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
+	<div class="pw-modal-sheet">
+		<div class="pw-modal-handle" aria-hidden="true"></div>
+		<div class="pw-modal-title" id="info-modal-title">Details</div>
+		<div id="info-modal-body"></div>
+		<button class="pw-close-btn" onclick="closeInfoModal()">Close</button>
+	</div>
+</div>
+
+{% block extra_js %}
+<script>
+	let landlordData = null;
+
+	window.addEventListener("load", async function() {
+		await window.Clerk.load();
+
+		if (!window.Clerk.user) {
+			window.location.href = "/";
+			return;
+		}
+
+		const user = window.Clerk.user;
+
+		// Set first name
+		const firstName = user.firstName || user.primaryEmailAddress?.emailAddress?.split("@")[0] || "Landlord";
+		document.getElementById("pw-first-name").textContent = firstName;
+
+		// Avatar, straight from Clerk. Falls back to an initial if
+		// for some reason Clerk has no image for this account.
+		if (user.imageUrl) {
+			const avatarImg = document.getElementById("pw-avatar-img");
+			avatarImg.src = user.imageUrl;
+			avatarImg.style.display = "block";
+			document.getElementById("pw-avatar-fallback").style.display = "none";
+		} else {
+			document.getElementById("pw-avatar-fallback").textContent = (firstName[0] || "?").toUpperCase();
+		}
+
+		// Set date
+		const now = new Date();
+		document.getElementById("pw-date").textContent = now.toLocaleDateString("en-KE", {
+			weekday: "long", day: "numeric", month: "long", year: "numeric"
+		});
+
+		// Fetch landlord data from Django
+		try {
+			const token = await window.Clerk.session.getToken();
+			const response = await fetch("/api/landlord/dashboard/", {
+				headers: { Authorization: "Bearer " + token }
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				populateDashboard(data);
+			} else {
+				document.getElementById("houses-container").innerHTML = `
+					<div class="pw-empty">
+						Failed to load your houses. Try refreshing.
+					</div>
+				`;
+			}
+		} catch (e) {
+			document.getElementById("houses-container").innerHTML = `
+				<div class="pw-empty">
+					No connection. Check your internet and try again.
+				</div>
+			`;
+		}
+
+		// Show dashboard, hide loading
+		document.getElementById("pw-loading").style.display = "none";
+		document.getElementById("pw-dashboard-content").style.display = "block";
+	});
+
+	function populateDashboard(data) {
+		landlordData = data;
+
+		document.getElementById("summary-houses").textContent = data.houses?.length || 0;
+
+		const occupied = data.houses?.filter(h => h.is_occupied).length || 0;
+		document.getElementById("summary-occupied").textContent = occupied;
+
+		const totalIssues = data.all_open_issues?.length || 0;
+		document.getElementById("summary-issues").textContent = totalIssues;
+
+		const badge = document.getElementById("issues-nav-badge");
+		if (totalIssues > 0) {
+			badge.textContent = totalIssues;
+			badge.style.display = "flex";
+		}
+
+		// Income overview, built from the same data already on screen,
+		// no extra network call needed.
+		let expected = 0, collected = 0, overdue = 0;
+		(data.houses || []).forEach(h => {
+			if (!h.is_occupied) return;
+			expected += Number(h.monthly_rent);
+			if (h.tenant && h.tenant.rent) {
+				if (h.tenant.rent.status === "paid") collected += Number(h.tenant.rent.amount);
+				if (h.tenant.rent.status === "overdue") overdue += Number(h.tenant.rent.amount);
+			}
+		});
+		document.getElementById("income-expected").textContent = "KSh " + expected.toLocaleString("en-KE");
+		document.getElementById("income-collected").textContent = "KSh " + collected.toLocaleString("en-KE");
+		document.getElementById("income-overdue").textContent = "KSh " + overdue.toLocaleString("en-KE");
+
+		const container = document.getElementById("houses-container");
+
+		if (!data.houses || data.houses.length === 0) {
+			container.innerHTML = `
+				<div class="pw-empty">
+					You have no houses registered yet.
+				</div>
+			`;
+			return;
+		}
+
+		container.innerHTML = data.houses.map(house => {
+			const statusClass = house.is_occupied ? "status-occupied" : "status-vacant";
+			const statusText = house.is_occupied ? "Occupied" : "Vacant";
+			const safeHouseId = escapeHtml(house.house_id);
+
+			let tenantBlock = "";
+			if (house.is_occupied && house.tenant) {
+				const rentStatus = house.tenant.rent?.status || "pending";
+				const waterStatus = house.tenant.water?.status || "pending";
+				const elecStatus = house.tenant.electricity?.status || "pending";
+
+				tenantBlock = `
+					<div class="tenant-info">
+						<div class="tenant-name">${escapeHtml(house.tenant.full_name)}</div>
+						<div class="tenant-email">${escapeHtml(house.tenant.email)}</div>
+						<div class="tenant-move-in">Moved in: ${house.tenant.move_in_date}</div>
+						<div class="bill-row">
+							<span class="bill-pill ${rentStatus}">Rent: ${rentStatus}</span>
+							<span class="bill-pill ${waterStatus}">Water: ${waterStatus}</span>
+							${house.electricity_type === "monthly" ? `<span class="bill-pill ${elecStatus}">Elec: ${elecStatus}</span>` : ""}
+						</div>
+						<button class="pw-detail-link" onclick="showHouseDetailSheet('${safeHouseId}')">View full details</button>
+					</div>
+				`;
+			} else if (!house.is_occupied) {
+				tenantBlock = `
+					<a href="/houses/${safeHouseId}/" target="_blank" rel="noopener noreferrer" class="pw-listing-link">
+						Preview public listing
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M7 17L17 7"/><path d="M7 7h10v10"/>
+						</svg>
+					</a>
+				`;
+			}
+
+			const issuesBadge = house.open_issues > 0
+				? `<button class="issues-badge" onclick="showHouseIssuesSheet('${safeHouseId}')">${house.open_issues} open issue${house.open_issues > 1 ? "s" : ""}</button>`
+				: "";
+
+			return `
+				<div class="pw-house-card">
+					<div class="house-header">
+						<div>
+							<div class="house-id">House ${safeHouseId}</div>
+							<div class="house-type">${escapeHtml(house.house_type)} · KSh ${Number(house.monthly_rent).toLocaleString("en-KE")}/mo</div>
+						</div>
+						<div style="display:flex;align-items:center;gap:8px;">
+							${issuesBadge}
+							<span class="status-badge ${statusClass}">${statusText}</span>
+						</div>
+					</div>
+					<div class="house-meta">
+						<span>${house.electricity_type === "token" ? "Token meter" : "Monthly bill"}</span>
+						<span>Deposit: KSh ${Number(house.deposit_amount).toLocaleString("en-KE")}</span>
+					</div>
+					${tenantBlock}
+				</div>
+			`;
+		}).join("");
+	}
+
+	function openInfoModal(title) {
+		document.getElementById("info-modal-title").textContent = title;
+		document.getElementById("info-modal").classList.add("open");
+		document.body.style.overflow = "hidden";
+	}
+
+	function closeInfoModal() {
+		document.getElementById("info-modal").classList.remove("open");
+		document.body.style.overflow = "";
+	}
+
+	document.getElementById("info-modal").addEventListener("click", function(e) {
+		if (e.target === this) closeInfoModal();
+	});
+
+	document.addEventListener("keydown", function(e) {
+		if (e.key === "Escape") closeInfoModal();
+	});
+
+	function formatDateLong(dateStr) {
+		if (!dateStr) return "--";
+		const d = new Date(dateStr + "T00:00:00");
+		return d.toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" });
+	}
+
+	function showLandlordProfileSheet() {
+		const p = landlordData && landlordData.profile;
+		if (!p) {
+			document.getElementById("info-modal-body").innerHTML = '<p class="pw-empty">Profile not available.</p>';
+			openInfoModal("Your Profile");
+			return;
+		}
+		document.getElementById("info-modal-body").innerHTML = `
+			<div class="pw-detail-row"><span class="label">Full name</span><span class="value">${escapeHtml(p.full_name)}</span></div>
+			<div class="pw-detail-row"><span class="label">Email</span><span class="value">${escapeHtml(p.email)}</span></div>
+			<div class="pw-detail-row"><span class="label">Phone</span><span class="value">${escapeHtml(p.phone_number)}</span></div>
+			<div class="pw-detail-row"><span class="label">Landlord since</span><span class="value">${formatDateLong(p.created_at)}</span></div>
+			<button class="pw-submit-btn" style="margin-top:1.25rem;" onclick="openClerkProfile()">Manage account &amp; photo</button>
+		`;
+		openInfoModal("Your Profile");
+	}
+
+	function openClerkProfile() {
+		closeInfoModal();
+		if (window.Clerk && window.Clerk.openUserProfile) {
+			window.Clerk.openUserProfile();
+		} else {
+			alert("Account management is still loading. Wait a moment and try again.");
+		}
+	}
+
+	function findHouse(houseId) {
+		return (landlordData?.houses || []).find(h => h.house_id === houseId);
+	}
+
+	function issueRowHtml(category, description, date, sourceLabel) {
+		return `
+			<div class="pw-issue-row">
+				<div class="issue-top">
+					<span class="issue-category">${escapeHtml(category)}</span>
+					<span class="issue-date">${date}</span>
+				</div>
+				<div class="issue-description">${escapeHtml(description)}</div>
+				${sourceLabel ? `<div class="issue-source">${escapeHtml(sourceLabel)}</div>` : ""}
+			</div>
+		`;
+	}
+
+	function showHouseIssuesSheet(houseId) {
+		const house = findHouse(houseId);
+		if (!house || !house.open_issues_list?.length) {
+			document.getElementById("info-modal-body").innerHTML = '<p class="pw-empty">No open issues for this house.</p>';
+			openInfoModal("House " + houseId + " Issues");
+			return;
+		}
+		const rows = house.open_issues_list.map(i => issueRowHtml(i.category, i.description, i.created_at)).join("");
+		document.getElementById("info-modal-body").innerHTML = `<div class="pw-issue-list">${rows}</div>`;
+		openInfoModal("House " + houseId + " Issues");
+	}
+
+	function showAllIssuesSheet() {
+		const issues = landlordData?.all_open_issues || [];
+		if (!issues.length) {
+			document.getElementById("info-modal-body").innerHTML = '<p class="pw-empty">No open issues across your portfolio. All clear.</p>';
+			openInfoModal("All Open Issues");
+			return;
+		}
+		const rows = issues.map(i => issueRowHtml(
+			i.category,
+			i.description,
+			i.created_at,
+			"House " + i.house_id + " · " + i.tenant_name
+		)).join("");
+		document.getElementById("info-modal-body").innerHTML = `<div class="pw-issue-list">${rows}</div>`;
+		openInfoModal("All Open Issues");
+	}
+
+	function showHouseDetailSheet(houseId) {
+		const house = findHouse(houseId);
+		if (!house || !house.tenant) {
+			document.getElementById("info-modal-body").innerHTML = '<p class="pw-empty">No tenant details available.</p>';
+			openInfoModal("House " + houseId);
+			return;
+		}
+		const t = house.tenant;
+		const rent = t.rent ? `KSh ${Number(t.rent.amount).toLocaleString("en-KE")} (${t.rent.status})` : "Not recorded yet";
+		const water = t.water ? `KSh ${Number(t.water.amount).toLocaleString("en-KE")} (${t.water.status})` : "Not recorded yet";
+		const elec = house.electricity_type === "monthly"
+			? (t.electricity ? `KSh ${Number(t.electricity.amount).toLocaleString("en-KE")} (${t.electricity.status})` : "Not recorded yet")
+			: "Token meter";
+
+		let issuesHtml = '<p class="pw-empty" style="padding:0.5rem 0;">No open issues.</p>';
+		if (house.open_issues_list?.length) {
+			issuesHtml = `<div class="pw-issue-list">${house.open_issues_list.map(i => issueRowHtml(i.category, i.description, i.created_at)).join("")}</div>`;
+		}
+
+		document.getElementById("info-modal-body").innerHTML = `
+			<div class="pw-detail-row"><span class="label">Tenant</span><span class="value">${escapeHtml(t.full_name)}</span></div>
+			<div class="pw-detail-row"><span class="label">Email</span><span class="value">${escapeHtml(t.email)}</span></div>
+			<div class="pw-detail-row"><span class="label">Phone</span><span class="value">${escapeHtml(t.phone_number || "--")}</span></div>
+			<div class="pw-detail-row"><span class="label">Moved in</span><span class="value">${t.move_in_date}</span></div>
+			<div class="pw-detail-row"><span class="label">Rent this month</span><span class="value">${rent}</span></div>
+			<div class="pw-detail-row"><span class="label">Water this month</span><span class="value">${water}</span></div>
+			<div class="pw-detail-row"><span class="label">Electricity</span><span class="value">${elec}</span></div>
+			<div style="margin-top:1.25rem;">
+				<div class="label" style="font-size:13px;color:var(--pw-muted);margin-bottom:0.5rem;">Open issues</div>
+				${issuesHtml}
+			</div>
+		`;
+		openInfoModal("House " + houseId);
+	}
+
+	function escapeHtml(text) {
+		if (!text) return "";
+		const div = document.createElement("div");
+		div.textContent = text;
+		return div.innerHTML;
+	}
+</script>
+{% endblock %}
+
+{% endblock %}

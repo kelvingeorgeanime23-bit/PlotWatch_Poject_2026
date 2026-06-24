@@ -1,0 +1,1189 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}PlotWatch - Home{% endblock %}
+
+{% block extra_css %}
+<style>
+	:root {
+		--pw-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+	}
+
+	.pw-section-wrap {
+		max-width: 700px;
+		margin: 0 auto;
+		padding: 0 1rem;
+	}
+
+	/* Hero, with the background photo */
+	.pw-home-hero {
+		position: relative;
+		overflow: hidden;
+		padding: 5rem 1rem 4rem;
+		background:
+			linear-gradient(180deg, rgba(13,13,13,0.5) 0%, rgba(13,13,13,0.78) 55%, var(--pw-bg) 100%),
+			url("{% static 'images/hero-bg.jpg' %}") center 30% / cover no-repeat;
+	}
+
+	.pw-home-hero-inner {
+		max-width: 560px;
+		margin: 0 auto;
+		text-align: center;
+		position: relative;
+		z-index: 1;
+	}
+
+	.pw-pill-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		background: rgba(26, 26, 26, 0.8);
+		border: 1px solid var(--pw-border);
+		border-radius: 999px;
+		padding: 8px 18px;
+		font-size: 13px;
+		color: var(--pw-muted);
+		margin-bottom: 1.5rem;
+	}
+
+	.pw-pill-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--pw-gold);
+		display: inline-block;
+		flex-shrink: 0;
+	}
+
+	.pw-pill-sep {
+		color: var(--pw-border);
+	}
+
+	.pw-home-hero h1 {
+		font-size: clamp(2rem, 5vw, 3rem);
+		line-height: 1.2;
+		margin-bottom: 1rem;
+	}
+
+	.pw-home-hero .lead {
+		color: var(--pw-muted);
+		font-size: 16px;
+		margin-bottom: 2rem;
+		line-height: 1.7;
+	}
+
+	.pw-hero-cta-row {
+		display: flex;
+		gap: 12px;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.pw-hero-contact-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		background: rgba(26, 26, 26, 0.6);
+	}
+
+	/* Generic section spacing */
+	.pw-home-section {
+		padding: 3rem 0;
+		position: relative;
+	}
+
+	.pw-home-section.surface-band {
+		background: var(--pw-surface);
+		border-top: 1px solid var(--pw-border);
+		border-bottom: 1px solid var(--pw-border);
+	}
+
+	.pw-section-head {
+		text-align: left;
+		margin-bottom: 1.75rem;
+	}
+
+	.pw-section-head.centered {
+		text-align: center;
+	}
+
+	.pw-eyebrow-chip {
+		display: inline-block;
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-border);
+		border-radius: 999px;
+		padding: 5px 14px;
+		font-size: 11px;
+		color: var(--pw-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		margin-bottom: 0.85rem;
+	}
+
+	.pw-section-head h2 {
+		font-size: 1.6rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.pw-section-head p {
+		color: var(--pw-muted);
+		font-size: 14px;
+		line-height: 1.6;
+		max-width: 480px;
+	}
+
+	.pw-section-head.centered p {
+		margin: 0 auto;
+	}
+
+	/* Reveal system. The section itself (.js-reveal-root) is only
+	   the trigger watched by IntersectionObserver. The actual
+	   motion lives on .reveal-item children, which get a small
+	   staggered delay in JS so cards settle into place one after
+	   another instead of all snapping in together. */
+	.reveal-item {
+		opacity: 0;
+		transform: translateY(18px) scale(0.97);
+		filter: blur(6px);
+		transition: opacity 650ms var(--pw-ease-out), transform 650ms var(--pw-ease-out), filter 650ms var(--pw-ease-out);
+		will-change: transform, opacity, filter;
+	}
+
+	.reveal-item.is-visible {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+
+	/* Blur-up for lazy-loaded photos. Starts soft and slightly
+	   oversized, sharpens and settles the moment the browser
+	   actually finishes loading it, while scrolling past. */
+	.pw-blur-up {
+		filter: blur(16px);
+		transform: scale(1.08);
+		opacity: 0;
+		transition: filter 550ms var(--pw-ease-out), transform 550ms var(--pw-ease-out), opacity 400ms ease;
+	}
+
+	.pw-blur-up.img-loaded {
+		filter: blur(0);
+		transform: scale(1);
+		opacity: 1;
+	}
+
+	/* Houses preview grid */
+	.pw-preview-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	@media (min-width: 560px) {
+		.pw-preview-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	.pw-preview-card {
+		display: block;
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		overflow: hidden;
+		transition: border-color 200ms ease;
+	}
+
+	.pw-preview-card:hover {
+		border-color: var(--pw-gold);
+	}
+
+	.pw-preview-photo {
+		width: 100%;
+		aspect-ratio: 4 / 5;
+		background: var(--pw-surface);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--pw-muted);
+		overflow: hidden;
+	}
+
+	.pw-preview-photo img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.pw-preview-body {
+		padding: 1rem 1.1rem;
+	}
+
+	.pw-preview-body .p-id {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--pw-white);
+		margin-bottom: 2px;
+	}
+
+	.pw-preview-body .p-meta {
+		font-size: 12px;
+		color: var(--pw-muted);
+		margin-bottom: 0.6rem;
+	}
+
+	.pw-preview-body .p-price {
+		font-family: "Playfair Display", serif;
+		font-size: 1.1rem;
+		color: var(--pw-gold);
+		margin-bottom: 0.5rem;
+	}
+
+	.pw-preview-link {
+		font-size: 13px;
+		color: var(--pw-gold);
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.pw-preview-more-card {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--pw-bg);
+		border: 1px dashed var(--pw-border);
+		border-radius: 12px;
+		min-height: 100px;
+		color: var(--pw-gold);
+		font-size: 14px;
+		font-weight: 500;
+		gap: 6px;
+		transition: border-color 200ms ease;
+	}
+
+	.pw-preview-more-card:hover {
+		border-color: var(--pw-gold);
+	}
+
+	.pw-preview-empty {
+		grid-column: 1 / -1;
+		text-align: center;
+		padding: 2rem 1rem;
+		color: var(--pw-muted);
+		font-size: 14px;
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		background: var(--pw-bg);
+	}
+
+	/* Benefits */
+	.pw-benefits-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	@media (min-width: 620px) {
+		.pw-benefits-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.pw-benefit-card {
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		padding: 1.4rem 1.25rem;
+	}
+
+	.pw-benefit-icon-tile {
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 1rem;
+	}
+
+	.pw-benefit-icon-tile.gold { background: rgba(201, 168, 76, 0.14); }
+	.pw-benefit-icon-tile.green { background: rgba(76, 175, 130, 0.14); }
+	.pw-benefit-icon-tile.blue { background: rgba(76, 175, 245, 0.14); }
+
+	.pw-benefit-card h4 {
+		font-size: 15px;
+		margin-bottom: 0.4rem;
+		font-family: "DM Sans", sans-serif;
+		font-weight: 500;
+	}
+
+	.pw-benefit-card p {
+		color: var(--pw-muted);
+		font-size: 13px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	/* Life on the Plot, the one glass-card signature moment */
+	.pw-glass-section {
+		overflow: hidden;
+	}
+
+	.pw-glass-glow {
+		position: absolute;
+		width: 480px;
+		height: 480px;
+		background: radial-gradient(circle, rgba(201,168,76,0.16), transparent 70%);
+		top: -140px;
+		left: 50%;
+		transform: translateX(-50%);
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.pw-life-grid {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	@media (min-width: 620px) {
+		.pw-life-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.pw-glass-card {
+		background: rgba(26, 26, 26, 0.5);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		border: 1px solid rgba(245, 245, 240, 0.08);
+		border-radius: 14px;
+		padding: 1.5rem 1.25rem;
+		box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+	}
+
+	.pw-glass-card .pw-benefit-icon-tile {
+		background: rgba(201, 168, 76, 0.16);
+	}
+
+	.pw-glass-card h4 {
+		font-size: 15px;
+		margin-bottom: 0.4rem;
+		font-family: "DM Sans", sans-serif;
+		font-weight: 500;
+	}
+
+	.pw-glass-card p {
+		color: var(--pw-muted);
+		font-size: 13px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	/* How it works, numbered list with connecting line */
+	.pw-process {
+		position: relative;
+		padding-left: 36px;
+	}
+
+	.pw-process-line {
+		position: absolute;
+		left: 11px;
+		top: 6px;
+		bottom: 6px;
+		width: 1px;
+		background: var(--pw-border);
+	}
+
+	.pw-process-step {
+		position: relative;
+		padding-bottom: 2rem;
+	}
+
+	.pw-process-step:last-child {
+		padding-bottom: 0;
+	}
+
+	.pw-process-dot {
+		position: absolute;
+		left: -36px;
+		top: 4px;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-gold);
+		color: var(--pw-gold);
+		font-size: 10px;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.pw-process-step h4 {
+		font-size: 15px;
+		margin-bottom: 0.3rem;
+		font-family: "DM Sans", sans-serif;
+		font-weight: 500;
+	}
+
+	.pw-process-step p {
+		color: var(--pw-muted);
+		font-size: 14px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.pw-process-cta-link {
+		display: inline-block;
+		margin-top: 0.5rem;
+		font-size: 13px;
+		color: var(--pw-gold);
+	}
+
+	/* FAQ accordion */
+	.pw-faq-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.pw-faq-item {
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.pw-faq-question {
+		width: 100%;
+		background: none;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1.1rem 1.25rem;
+		text-align: left;
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--pw-white);
+		cursor: pointer;
+		font-family: inherit;
+		touch-action: manipulation;
+		min-height: 56px;
+	}
+
+	.pw-faq-icon {
+		flex-shrink: 0;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		border: 1px solid var(--pw-border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--pw-gold);
+		transition: transform 250ms ease;
+	}
+
+	.pw-faq-item.open .pw-faq-icon {
+		transform: rotate(45deg);
+	}
+
+	.pw-faq-answer-wrap {
+		display: grid;
+		grid-template-rows: 0fr;
+		transition: grid-template-rows 280ms ease;
+	}
+
+	.pw-faq-item.open .pw-faq-answer-wrap {
+		grid-template-rows: 1fr;
+	}
+
+	.pw-faq-answer-inner {
+		overflow: hidden;
+	}
+
+	.pw-faq-answer {
+		padding: 0 1.25rem 1.1rem;
+		color: var(--pw-muted);
+		font-size: 13px;
+		line-height: 1.7;
+	}
+
+	/* Contact form card */
+	.pw-contact-form-card {
+		background: var(--pw-bg);
+		border: 1px solid var(--pw-border);
+		border-radius: 12px;
+		padding: 1.75rem 1.5rem;
+		max-width: 480px;
+		margin: 0 auto;
+	}
+
+	.pw-toggle-row {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 1.25rem;
+	}
+
+	.pw-toggle-btn {
+		flex: 1;
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 8px;
+		padding: 10px;
+		font-size: 13px;
+		font-family: inherit;
+		color: var(--pw-muted);
+		cursor: pointer;
+		touch-action: manipulation;
+		transition: all 200ms ease;
+		min-height: 44px;
+	}
+
+	.pw-toggle-btn.active {
+		background: rgba(201, 168, 76, 0.14);
+		border-color: var(--pw-gold);
+		color: var(--pw-gold);
+		font-weight: 500;
+	}
+
+	.pw-form-group {
+		margin-bottom: 1rem;
+	}
+
+	.pw-form-group label {
+		display: block;
+		font-size: 12px;
+		color: var(--pw-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		margin-bottom: 6px;
+	}
+
+	.pw-form-group input,
+	.pw-form-group textarea {
+		width: 100%;
+		background: var(--pw-surface);
+		border: 1px solid var(--pw-border);
+		border-radius: 8px;
+		color: var(--pw-white);
+		font-family: 'DM Sans', sans-serif;
+		font-size: 14px;
+		padding: 11px 14px;
+		outline: none;
+		transition: border-color 200ms ease;
+	}
+
+	.pw-form-group input:focus,
+	.pw-form-group textarea:focus {
+		border-color: var(--pw-gold);
+		box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+	}
+
+	.pw-form-group textarea {
+		resize: none;
+		min-height: 100px;
+	}
+
+	.pw-submit-btn {
+		width: 100%;
+		background: var(--pw-gold);
+		color: #0D0D0D;
+		border: none;
+		border-radius: 10px;
+		padding: 14px;
+		font-family: 'DM Sans', sans-serif;
+		font-size: 15px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 160ms ease-out, transform 160ms ease-out;
+		touch-action: manipulation;
+		min-height: 52px;
+	}
+
+	.pw-submit-btn:hover { background: var(--pw-gold-light); }
+	.pw-submit-btn:active { transform: scale(0.98); }
+	.pw-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	.pw-form-msg {
+		font-size: 13px;
+		margin-top: 0.75rem;
+		text-align: center;
+		min-height: 20px;
+	}
+
+	/* Final CTA */
+	.pw-final-cta {
+		text-align: center;
+		padding: 3.5rem 0 4rem;
+	}
+
+	.pw-final-cta h2 {
+		font-size: 1.8rem;
+		margin-bottom: 0.75rem;
+		max-width: 480px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.pw-final-cta p {
+		color: var(--pw-muted);
+		font-size: 14px;
+		margin-bottom: 1.5rem;
+	}
+
+	/* Footer */
+	.pw-footer {
+		background: #000;
+		border-top: 1px solid var(--pw-border);
+		padding-top: 3rem;
+		overflow: hidden;
+	}
+
+	.pw-footer-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2rem;
+		padding-bottom: 2.5rem;
+	}
+
+	@media (min-width: 560px) {
+		.pw-footer-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.pw-footer-col h5 {
+		font-size: 12px;
+		color: var(--pw-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		margin-bottom: 0.9rem;
+		font-family: "DM Sans", sans-serif;
+		font-weight: 500;
+	}
+
+	.pw-footer-col a,
+	.pw-footer-col button {
+		display: block;
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		text-align: left;
+		color: var(--pw-muted);
+		font-size: 14px;
+		margin-bottom: 0.7rem;
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.pw-footer-col a:hover,
+	.pw-footer-col button:hover {
+		color: var(--pw-gold);
+	}
+
+	.pw-footer-wordmark {
+		font-family: "Playfair Display", serif;
+		font-weight: 600;
+		font-size: clamp(3.5rem, 17vw, 8rem);
+		line-height: 0.9;
+		color: rgba(201, 168, 76, 0.9);
+		text-align: center;
+		letter-spacing: -0.01em;
+		white-space: nowrap;
+		margin-top: 1rem;
+	}
+
+	.pw-footer-bottom {
+		border-top: 1px solid var(--pw-border);
+		padding: 1.1rem 0;
+		text-align: center;
+		font-size: 12px;
+		color: var(--pw-muted);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.pw-faq-answer-wrap { transition: none; }
+		.pw-faq-icon { transition: none; }
+		.reveal-item {
+			opacity: 1;
+			transform: none;
+			filter: none;
+			transition: none;
+		}
+		.pw-blur-up {
+			opacity: 1;
+			filter: none;
+			transform: none;
+			transition: none;
+		}
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="pw-home-hero">
+	<div class="pw-home-hero-inner">
+		<div class="pw-pill-badge">
+			<span><span class="pw-pill-dot"></span> {{ total_houses }} houses on this plot</span>
+			<span class="pw-pill-sep">·</span>
+			<span><span class="pw-pill-dot"></span> Vanessa, on call every day</span>
+		</div>
+
+		<h1>Your plot.<br>Always in view.</h1>
+		<p class="lead">
+			See your rent, water, and electricity bills any time. Report a problem in one tap.
+			Real answers from a real caretaker, not a call centre.
+		</p>
+		<div class="pw-hero-cta-row">
+			<a href="{% url 'houses_list' %}" class="btn-gold">Browse available houses</a>
+			<button type="button" class="btn-outline-gold pw-hero-contact-btn" onclick="document.getElementById('contact-section').scrollIntoView({behavior:'smooth'})">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="2" y="4" width="20" height="16" rx="2"/>
+					<path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+				</svg>
+				Get in touch
+			</button>
+		</div>
+	</div>
+</div>
+
+<div class="pw-home-section js-reveal-root">
+	<div class="pw-section-wrap">
+		<div class="pw-section-head reveal-item">
+			<h2>Houses on the plot</h2>
+		</div>
+
+		<div class="pw-preview-grid">
+			{% if preview_houses %}
+				{% for house in preview_houses %}
+				<a href="{% url 'house_detail' house.house_id %}" class="pw-preview-card reveal-item">
+					<div class="pw-preview-photo">
+						{% if house.photo %}
+							<img class="pw-blur-up" src="{{ house.photo.url }}" alt="House {{ house.house_id }}" loading="lazy" onload="this.classList.add('img-loaded')">
+						{% elif house.gallery_photos.first %}
+							<img class="pw-blur-up" src="{{ house.gallery_photos.first.image.url }}" alt="House {{ house.house_id }}" loading="lazy" onload="this.classList.add('img-loaded')">
+						{% else %}
+							<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<rect x="3" y="3" width="18" height="18" rx="2"/>
+								<circle cx="8.5" cy="8.5" r="1.5"/>
+								<path d="M21 15l-5-5L5 21"/>
+							</svg>
+						{% endif %}
+					</div>
+					<div class="pw-preview-body">
+						<div class="p-id">House {{ house.house_id }}</div>
+						<div class="p-meta">{{ house.get_house_type_display }} · {{ house.get_electricity_type_display }}</div>
+						<div class="p-price">KSh {{ house.monthly_rent|floatformat:0|intcomma }}/mo</div>
+						<span class="pw-preview-link">View house →</span>
+					</div>
+				</a>
+				{% endfor %}
+			{% else %}
+				<div class="pw-preview-empty reveal-item">All houses are occupied right now. Check back soon.</div>
+			{% endif %}
+
+			<a href="{% url 'houses_list' %}" class="pw-preview-more-card reveal-item">View all houses →</a>
+		</div>
+	</div>
+</div>
+
+<div class="pw-home-section surface-band js-reveal-root">
+	<div class="pw-section-wrap">
+		<div class="pw-section-head reveal-item">
+			<span class="pw-eyebrow-chip">Benefits</span>
+			<h2>What you get</h2>
+		</div>
+
+		<div class="pw-benefits-grid">
+			<div class="pw-benefit-card reveal-item">
+				<div class="pw-benefit-icon-tile gold">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+					</svg>
+				</div>
+				<h4>Clear bills, always</h4>
+				<p>Rent, water, and electricity in one place. No guessing what you owe.</p>
+			</div>
+			<div class="pw-benefit-card reveal-item">
+				<div class="pw-benefit-icon-tile green">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pw-green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.52 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+					</svg>
+				</div>
+				<h4>A real person, not a call centre</h4>
+				<p>Call or WhatsApp Vanessa straight from your phone.</p>
+			</div>
+			<div class="pw-benefit-card reveal-item">
+				<div class="pw-benefit-icon-tile blue">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4CAFF5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+					</svg>
+				</div>
+				<h4>See it before you commit</h4>
+				<p>Find the plot on Google Maps and look around before you decide.</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="pw-home-section pw-glass-section js-reveal-root">
+	<div class="pw-glass-glow" aria-hidden="true"></div>
+	<div class="pw-section-wrap">
+		<div class="pw-section-head reveal-item">
+			<span class="pw-eyebrow-chip">Life On The Plot</span>
+			<h2>What to expect day to day</h2>
+		</div>
+
+		<div class="pw-life-grid">
+			<div class="pw-glass-card reveal-item">
+				<div class="pw-benefit-icon-tile">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+					</svg>
+				</div>
+				<h4>Water day hasn't changed</h4>
+				<p>Every Tuesday, one tap, bring your jerricans. A 20 litre jerrican costs KSh 10. PlotWatch keeps track of who's paid.</p>
+			</div>
+			<div class="pw-glass-card reveal-item">
+				<div class="pw-benefit-icon-tile">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+					</svg>
+				</div>
+				<h4>Garbage, sorted</h4>
+				<p>Every house gets a rubbish sack. Collection runs once a week, every Wednesday. Fill it, tie it, leave it out.</p>
+			</div>
+			<div class="pw-glass-card reveal-item">
+				<div class="pw-benefit-icon-tile">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+					</svg>
+				</div>
+				<h4>Gate locks at 11pm</h4>
+				<p>Every tenant gets their own gate key. Coming home late never means waking the plot.</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="pw-home-section surface-band js-reveal-root">
+	<div class="pw-section-wrap">
+		<div class="pw-section-head reveal-item">
+			<span class="pw-eyebrow-chip">The Process</span>
+			<h2>How it works</h2>
+			<p>No agents, no middlemen. Just you, the house, and Vanessa.</p>
+		</div>
+
+		<div class="pw-process">
+			<div class="pw-process-line" aria-hidden="true"></div>
+
+			<div class="pw-process-step reveal-item">
+				<div class="pw-process-dot">01</div>
+				<h4>Browse the houses</h4>
+				<p>See photos, prices, and deposits for every open house on the plot.</p>
+				<a href="{% url 'houses_list' %}" class="pw-process-cta-link">Browse now →</a>
+			</div>
+			<div class="pw-process-step reveal-item">
+				<div class="pw-process-dot">02</div>
+				<h4>Move in</h4>
+				<p>Contact Vanessa, pay your deposit, get your keys.</p>
+			</div>
+			<div class="pw-process-step reveal-item">
+				<div class="pw-process-dot">03</div>
+				<h4>Check your bills any time</h4>
+				<p>Sign in to see your rent, water, and electricity bills, paid or pending.</p>
+			</div>
+			<div class="pw-process-step reveal-item">
+				<div class="pw-process-dot">04</div>
+				<h4>Report a problem in one tap</h4>
+				<p>Roof leak, broken lock, anything. It goes straight to Vanessa.</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="pw-home-section js-reveal-root">
+	<div class="pw-section-wrap">
+		<div class="pw-section-head centered reveal-item">
+			<h2>FAQs</h2>
+		</div>
+
+		<div class="pw-faq-list" id="faq-list">
+			<div class="pw-faq-item reveal-item">
+				<button class="pw-faq-question" onclick="toggleFaq(this)">
+					Do I need an account to see the houses?
+					<span class="pw-faq-icon">+</span>
+				</button>
+				<div class="pw-faq-answer-wrap">
+					<div class="pw-faq-answer-inner">
+						<p class="pw-faq-answer">No. Browsing available houses is open to anyone, no sign-in required. You only need an account once you've moved in and Vanessa links you to your house.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="pw-faq-item reveal-item">
+				<button class="pw-faq-question" onclick="toggleFaq(this)">
+					How do I pay rent and bills?
+					<span class="pw-faq-icon">+</span>
+				</button>
+				<div class="pw-faq-answer-wrap">
+					<div class="pw-faq-answer-inner">
+						<p class="pw-faq-answer">Pay Vanessa directly, cash or M-Pesa. She records it on your account, so your bill shows as paid the next time you check.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="pw-faq-item reveal-item">
+				<button class="pw-faq-question" onclick="toggleFaq(this)">
+					What if something breaks in my house?
+					<span class="pw-faq-icon">+</span>
+				</button>
+				<div class="pw-faq-answer-wrap">
+					<div class="pw-faq-answer-inner">
+						<p class="pw-faq-answer">Sign in, tap "Report a house issue," pick a category, describe it. It goes straight to Vanessa, not your landlord.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="pw-faq-item reveal-item">
+				<button class="pw-faq-question" onclick="toggleFaq(this)">
+					Can I see the plot before I commit?
+					<span class="pw-faq-icon">+</span>
+				</button>
+				<div class="pw-faq-answer-wrap">
+					<div class="pw-faq-answer-inner">
+						<p class="pw-faq-answer">Yes. Every house page has a directions button straight to the plot on Google Maps.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="pw-home-section surface-band js-reveal-root" id="contact-section">
+	<div class="pw-section-wrap">
+		<div class="pw-section-head centered reveal-item">
+			<span class="pw-eyebrow-chip">Get In Touch</span>
+			<h2>Send Vanessa a message</h2>
+			<p>Can't call right now? Leave your details and she'll get back to you.</p>
+		</div>
+
+		<div class="pw-contact-form-card reveal-item">
+			<div class="pw-toggle-row">
+				<button type="button" class="pw-toggle-btn active" id="toggle-guest" onclick="setContactType(false)">Just visiting</button>
+				<button type="button" class="pw-toggle-btn" id="toggle-tenant" onclick="setContactType(true)">I'm a tenant</button>
+			</div>
+
+			<div class="pw-form-group">
+				<label for="contact-name">Your name</label>
+				<input type="text" id="contact-name" placeholder="Jane Wanjiru">
+			</div>
+			<div class="pw-form-group">
+				<label for="contact-email">Your email</label>
+				<input type="email" id="contact-email" placeholder="jane@email.com">
+			</div>
+			<div class="pw-form-group" id="house-number-group" style="display:none;">
+				<label for="contact-house">Your house number</label>
+				<input type="text" id="contact-house" placeholder="e.g. D1, M4, F2">
+			</div>
+			<div class="pw-form-group">
+				<label for="contact-message">Message</label>
+				<textarea id="contact-message" placeholder="What can Vanessa help with?"></textarea>
+			</div>
+			<button class="pw-submit-btn" id="contact-submit-btn" onclick="submitContactForm()">Send message</button>
+			<p class="pw-form-msg" id="contact-form-msg" aria-live="polite"></p>
+		</div>
+	</div>
+</div>
+
+<div class="pw-final-cta js-reveal-root">
+	<div class="pw-section-wrap reveal-item">
+		<h2>Find your next home on this plot.</h2>
+		<p>Already living here? Sign in to see your bills.</p>
+		<a href="{% url 'houses_list' %}" class="btn-gold">Browse available houses</a>
+	</div>
+</div>
+
+<footer class="pw-footer">
+	<div class="pw-section-wrap">
+		<div class="pw-footer-grid">
+			<div class="pw-footer-col">
+				<h5>For Tenants</h5>
+				<a href="{% url 'houses_list' %}">Browse houses</a>
+				<button onclick="signInUser()">Sign in</button>
+				<a href="/tenant/">Report an issue</a>
+			</div>
+			<div class="pw-footer-col">
+				<h5>Get In Touch</h5>
+				<a href="tel:+254714390982">Call Vanessa</a>
+				<a href="https://wa.me/254714390982" target="_blank" rel="noopener noreferrer">WhatsApp Vanessa</a>
+				<a href="https://www.google.com/maps/dir/?api=1&destination=-1.295063,36.7485343" target="_blank" rel="noopener noreferrer">Find the plot</a>
+			</div>
+			<div class="pw-footer-col">
+				<h5>PlotWatch</h5>
+				<a href="/">Home</a>
+			</div>
+		</div>
+
+		<div class="pw-footer-wordmark">PlotWatch</div>
+	</div>
+
+	<div class="pw-footer-bottom">
+		&copy; 2026 PlotWatch. All rights reserved.
+	</div>
+</footer>
+
+{% block extra_js %}
+<script>
+	function toggleFaq(button) {
+		const item = button.closest('.pw-faq-item');
+		const wasOpen = item.classList.contains('open');
+
+		document.querySelectorAll('#faq-list .pw-faq-item').forEach(function (faqItem) {
+			faqItem.classList.remove('open');
+		});
+
+		if (!wasOpen) {
+			item.classList.add('open');
+		}
+	}
+
+	// Staggered scroll reveal. Each section is watched once. The
+	// moment it enters the viewport, every .reveal-item inside it
+	// gets a small increasing delay, so cards settle into place
+	// one after another instead of snapping in all at once.
+	document.addEventListener('DOMContentLoaded', function () {
+		const roots = document.querySelectorAll('.js-reveal-root');
+
+		if (!('IntersectionObserver' in window)) {
+			document.querySelectorAll('.reveal-item').forEach(el => el.classList.add('is-visible'));
+			return;
+		}
+
+		const observer = new IntersectionObserver(function (entries) {
+			entries.forEach(function (entry) {
+				if (entry.isIntersecting) {
+					const items = entry.target.querySelectorAll('.reveal-item');
+					items.forEach(function (item, index) {
+						item.style.transitionDelay = (index * 70) + 'ms';
+						item.classList.add('is-visible');
+					});
+					observer.unobserve(entry.target);
+				}
+			});
+		}, { threshold: 0.15 });
+
+		roots.forEach(root => observer.observe(root));
+	});
+
+	// If someone arrived via a link carrying #contact-section,
+	// scroll there once the page has settled.
+	window.addEventListener('load', function() {
+		if (window.location.hash === '#contact-section') {
+			setTimeout(function() {
+				const section = document.getElementById('contact-section');
+				if (section) section.scrollIntoView({ behavior: 'smooth' });
+			}, 150);
+		}
+	});
+
+	let contactIsTenant = false;
+
+	function setContactType(isTenant) {
+		contactIsTenant = isTenant;
+		document.getElementById('toggle-guest').classList.toggle('active', !isTenant);
+		document.getElementById('toggle-tenant').classList.toggle('active', isTenant);
+		document.getElementById('house-number-group').style.display = isTenant ? 'block' : 'none';
+	}
+
+	async function submitContactForm() {
+		const name = document.getElementById('contact-name').value.trim();
+		const email = document.getElementById('contact-email').value.trim();
+		const message = document.getElementById('contact-message').value.trim();
+		const houseNumber = document.getElementById('contact-house').value.trim();
+		const btn = document.getElementById('contact-submit-btn');
+		const msg = document.getElementById('contact-form-msg');
+
+		if (!name || !email || !message) {
+			msg.style.color = 'var(--pw-red)';
+			msg.textContent = 'Please fill in every field.';
+			return;
+		}
+
+		if (message.length < 5) {
+			msg.style.color = 'var(--pw-red)';
+			msg.textContent = 'Please write a bit more detail.';
+			return;
+		}
+
+		if (contactIsTenant && !houseNumber) {
+			msg.style.color = 'var(--pw-red)';
+			msg.textContent = 'Please add your house number.';
+			return;
+		}
+
+		btn.disabled = true;
+		btn.textContent = 'Sending...';
+		msg.textContent = '';
+
+		try {
+			const response = await fetch('/api/contact/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCookie('csrftoken')
+				},
+				body: JSON.stringify({
+					name, email, message,
+					is_tenant: contactIsTenant,
+					house_number: houseNumber
+				})
+			});
+
+			if (response.ok) {
+				msg.style.color = 'var(--pw-green)';
+				msg.textContent = 'Message sent. Vanessa will get back to you.';
+				document.getElementById('contact-name').value = '';
+				document.getElementById('contact-email').value = '';
+				document.getElementById('contact-message').value = '';
+				document.getElementById('contact-house').value = '';
+				setContactType(false);
+			} else {
+				msg.style.color = 'var(--pw-red)';
+				msg.textContent = 'Something went wrong. Try again.';
+			}
+		} catch (e) {
+			msg.style.color = 'var(--pw-red)';
+			msg.textContent = 'No connection. Try again.';
+		}
+
+		btn.disabled = false;
+		btn.textContent = 'Send message';
+	}
+
+	function getCookie(name) {
+		let cookieValue = null;
+		if (document.cookie && document.cookie !== '') {
+			document.cookie.split(';').forEach(cookie => {
+				const c = cookie.trim();
+				if (c.startsWith(name + '=')) {
+					cookieValue = decodeURIComponent(c.substring(name.length + 1));
+				}
+			});
+		}
+		return cookieValue;
+	}
+</script>
+{% endblock %}
+
+{% endblock %}
