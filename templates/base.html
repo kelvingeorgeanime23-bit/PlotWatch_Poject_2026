@@ -87,12 +87,44 @@
         -webkit-backdrop-filter: blur(16px);
 
         border-bottom: 1px solid rgba(245, 245, 240, 0.06);
-        padding: 1rem 1.5rem;
+        padding: 0.75rem 1rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
 
         transition: background 300ms ease, backdrop-filter 300ms ease, border-color 300ms ease;
+      }
+
+      .pw-navbar .brand {
+        font-family: "Playfair Display", serif;
+        font-size: 1.25rem;
+        color: var(--pw-gold);
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      #nav-auth-area {
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 480px) {
+        .pw-navbar {
+          padding: 0.6rem 0.75rem;
+        }
+
+        .pw-navbar .brand {
+          font-size: 1.1rem;
+        }
+
+        .btn-gold,
+        .btn-outline-gold {
+          padding: 8px 14px;
+          font-size: 12px;
+          min-height: 36px;
+          border-radius: 6px;
+        }
       }
 
       .pw-navbar.scrolled {
