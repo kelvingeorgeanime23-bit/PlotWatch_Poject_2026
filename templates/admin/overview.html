@@ -1,0 +1,91 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}This Week's Overview | PlotWatch Admin{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; This Week's Overview
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .pw-admin-wrap { max-width: 900px; }
+  .pw-overview-section { margin-bottom: 2rem; }
+  .pw-overview-section h2 { font-size: 1.1rem; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 12px; }
+  .pw-overview-table { width:100%; border-collapse:collapse; }
+  .pw-overview-table th, .pw-overview-table td { padding:8px 10px; border-bottom:1px solid #eee; text-align:left; font-size:13px; }
+  .pw-overview-table th { background:#f4f4f4; }
+  .pw-empty-note { color:#2e7d32; font-size:13px; padding:8px 0; }
+  .pw-badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+  .pw-badge.pending { background:#fff3cd; color:#8a6d00; }
+  .pw-badge.overdue { background:#fdecea; color:#a31515; }
+  .pw-badge.not-entered { background:#eee; color:#666; }
+</style>
+
+<div class="pw-admin-wrap">
+  <h1>This Week's Overview</h1>
+  <p>Everything due or open right now, in one place. Reads live from the database, nothing stored separately here.</p>
+
+  <div class="pw-overview-section">
+    <h2>Rent not yet collected this month ({{ pending_rent|length }} of {{ total_occupied }})</h2>
+    {% if pending_rent %}
+    <table class="pw-overview-table">
+      <thead><tr><th>House</th><th>Tenant</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for row in pending_rent %}
+        <tr>
+          <td>{{ row.house_id }}</td>
+          <td>{{ row.tenant.full_name }}</td>
+          <td>KSh {{ row.amount }}</td>
+          <td><span class="pw-badge {{ row.status|slugify }}">{{ row.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="pw-empty-note">Everyone's paid up for this month.</p>
+    {% endif %}
+  </div>
+
+  <div class="pw-overview-section">
+    <h2>Hasn't bought water yet this week ({{ most_recent_tuesday|date:"j F" }})</h2>
+    {% if not_bought_water %}
+    <table class="pw-overview-table">
+      <thead><tr><th>House</th><th>Tenant</th></tr></thead>
+      <tbody>
+        {% for row in not_bought_water %}
+        <tr><td>{{ row.house_id }}</td><td>{{ row.tenant.full_name }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="pw-empty-note">Everyone's bought water this week.</p>
+    {% endif %}
+    <p><a href="{% url 'admin_water_entry' %}">Go to weekly water entry &rarr;</a></p>
+  </div>
+
+  <div class="pw-overview-section">
+    <h2>Open maintenance issues ({{ open_issues|length }})</h2>
+    {% if open_issues %}
+    <table class="pw-overview-table">
+      <thead><tr><th>House</th><th>Tenant</th><th>Category</th><th>Reported</th><th></th></tr></thead>
+      <tbody>
+        {% for issue in open_issues %}
+        <tr>
+          <td>{{ issue.tenant.house.house_id }}</td>
+          <td>{{ issue.tenant.full_name }}</td>
+          <td>{{ issue.get_category_display }}</td>
+          <td>{{ issue.created_at|date:"j M" }}</td>
+          <td><a href="{% url 'admin:core_maintenancerequest_change' issue.id %}">View &rarr;</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="pw-empty-note">No open issues right now.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

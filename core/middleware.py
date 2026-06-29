@@ -60,6 +60,3 @@ def clerk_auth_middleware(get_response):
         return get_response(request)
 
     return middleware
-
-
-

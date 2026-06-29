@@ -7,7 +7,7 @@
 	.pw-dashboard {
 		max-width: 680px;
 		margin: 0 auto;
-		padding: 1.5rem 1rem 6rem;
+		padding: 6.5rem 1rem 6rem;
 	}
 
 	/* Profile row */
@@ -544,7 +544,7 @@
 {% block content %}
 
 <!-- Loading state -->
-<div id="pw-loading" style="max-width:680px;margin:0 auto;padding:1.5rem 1rem;">
+<div id="pw-loading" style="max-width:680px;margin:0 auto;padding:6.5rem 1rem 1.5rem;">
 	<div class="pw-skeleton"></div>
 	<div class="pw-skeleton" style="height:120px;"></div>
 	<div class="pw-skeleton" style="height:120px;"></div>
@@ -868,13 +868,18 @@
 	}
 
 	function openClerkProfile() {
-		closeInfoModal();
-		if (window.Clerk && window.Clerk.openUserProfile) {
-			window.Clerk.openUserProfile();
-		} else {
-			alert("Account management is still loading. Wait a moment and try again.");
-		}
-	}
+  closeInfoModal();
+  if (!window.Clerk || !window.Clerk.openUserProfile) {
+    alert("Account management is still loading. Wait a moment and try again.");
+    return;
+  }
+  try {
+    window.Clerk.openUserProfile();
+  } catch (err) {
+    alert("Clerk error: " + (err && err.message ? err.message : err));
+    console.error(err);
+  }
+}
 
 	function findHouse(houseId) {
 		return (landlordData?.houses || []).find(h => h.house_id === houseId);
@@ -936,6 +941,11 @@
 			? (t.electricity ? `KSh ${Number(t.electricity.amount).toLocaleString("en-KE")} (${t.electricity.status})` : "Not recorded yet")
 			: "Token meter";
 
+		const household = t.household_members || [];
+		const householdHtml = household.length
+			? household.map(m => `<div class="pw-detail-row"><span class="label">${escapeHtml(m.relationship)}</span><span class="value">${escapeHtml(m.full_name)}</span></div>`).join("")
+			: `<div class="pw-detail-row"><span class="label">Living situation</span><span class="value">Lives alone</span></div>`;
+
 		let issuesHtml = '<p class="pw-empty" style="padding:0.5rem 0;">No open issues.</p>';
 		if (house.open_issues_list?.length) {
 			issuesHtml = `<div class="pw-issue-list">${house.open_issues_list.map(i => issueRowHtml(i.category, i.description, i.created_at)).join("")}</div>`;
@@ -949,6 +959,7 @@
 			<div class="pw-detail-row"><span class="label">Rent this month</span><span class="value">${rent}</span></div>
 			<div class="pw-detail-row"><span class="label">Water this month</span><span class="value">${water}</span></div>
 			<div class="pw-detail-row"><span class="label">Electricity</span><span class="value">${elec}</span></div>
+			${householdHtml}
 			<div style="margin-top:1.25rem;">
 				<div class="label" style="font-size:13px;color:var(--pw-muted);margin-bottom:0.5rem;">Open issues</div>
 				${issuesHtml}

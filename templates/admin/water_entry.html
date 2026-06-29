@@ -1,0 +1,69 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Weekly Water Entry | PlotWatch Admin{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; Weekly Water Entry
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .pw-admin-wrap { max-width: 900px; }
+  .pw-date-nav { display:flex; align-items:center; gap:12px; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pw-date-nav a { padding:6px 14px; background:#417690; color:#fff; border-radius:4px; text-decoration:none; font-size:13px; }
+  .pw-date-nav form { display:flex; gap:8px; align-items:center; }
+  .pw-water-table { width:100%; border-collapse:collapse; margin-bottom:1.25rem; }
+  .pw-water-table th, .pw-water-table td { padding:8px 10px; border-bottom:1px solid #ddd; text-align:left; font-size:13px; }
+  .pw-water-table th { background:#f4f4f4; }
+  .pw-water-table input[type="number"] { width:64px; padding:4px; }
+  .pw-save-btn { background:#417690; color:#fff; border:none; padding:10px 22px; border-radius:4px; font-size:14px; cursor:pointer; }
+  .pw-save-btn:hover { background:#205067; }
+</style>
+
+<div class="pw-admin-wrap">
+  <h1>Weekly Water Entry</h1>
+  <p>Enter the jerricans each tenant bought for {{ entry_date|date:"l, j F Y" }}. Leave both fields blank for anyone who didn't buy water this round.</p>
+
+  <div class="pw-date-nav">
+    <a href="?date={{ prev_date|date:'Y-m-d' }}">&larr; Previous week</a>
+    <strong>{{ entry_date|date:"l, j F Y" }}</strong>
+    <a href="?date={{ next_date|date:'Y-m-d' }}">Next week &rarr;</a>
+    <form method="get" action="">
+      <input type="date" name="date" value="{{ entry_date|date:'Y-m-d' }}">
+      <button type="submit" class="pw-save-btn" style="padding:6px 14px;">Go</button>
+    </form>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="entry_date" value="{{ entry_date|date:'Y-m-d' }}">
+    <table class="pw-water-table">
+      <thead>
+        <tr>
+          <th>House</th>
+          <th>Tenant</th>
+          <th>20L jerricans (KSh 10 each)</th>
+          <th>10L jerricans (KSh 5 each)</th>
+          <th>Paid</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.tenant.house.house_id }}</td>
+          <td>{{ row.tenant.full_name }}</td>
+          <td><input type="number" min="0" name="qty20_{{ row.tenant.id }}" value="{{ row.qty_20 }}"></td>
+          <td><input type="number" min="0" name="qty10_{{ row.tenant.id }}" value="{{ row.qty_10 }}"></td>
+          <td><input type="checkbox" name="paid_{{ row.tenant.id }}" {% if row.is_paid %}checked{% endif %}></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="submit" class="pw-save-btn">Save this week's water entries</button>
+  </form>
+</div>
+{% endblock %}

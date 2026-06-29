@@ -208,6 +208,25 @@ class MaintenanceRequest(models.Model):
 		return f"{self.tenant.full_name} - {self.get_category_display()} - {self.status}"
 
 
+# HOUSEHOLD MEMBER CLASS
+class HouseholdMember(models.Model):
+	RELATIONSHIP_CHOICES = [
+		('spouse', 'Spouse'),
+		('child', 'Child'),
+		('other', 'Other'),
+	]
+
+	tenant = models.ForeignKey(
+		Tenant,
+		on_delete=models.CASCADE,
+		related_name='household_members'
+	)
+	full_name = models.CharField(max_length=100)
+	relationship = models.CharField(max_length=10, choices=RELATIONSHIP_CHOICES)
+
+	def __str__(self):
+		return f"{self.full_name} ({self.get_relationship_display()}) - {self.tenant.full_name}"
+
 # CONTACT MESSAGE MODEL: Public contact form on the homepage.
 # No authentication, anyone can send one. No email server is set
 # up, so this is the simple version: saved here, read by Vanessa

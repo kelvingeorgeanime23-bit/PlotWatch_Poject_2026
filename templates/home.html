@@ -19,7 +19,7 @@
 	.pw-home-hero {
 		position: relative;
 		overflow: hidden;
-		padding: 5rem 1rem 4rem;
+		padding: 6.5rem 1rem 4rem;
 		background:
 			linear-gradient(180deg, rgba(13,13,13,0.5) 0%, rgba(13,13,13,0.78) 55%, var(--pw-bg) 100%),
 			url("{% static 'images/hero-bg.jpg' %}") center 30% / cover no-repeat;
@@ -136,11 +136,7 @@
 		margin: 0 auto;
 	}
 
-	/* Reveal system. The section itself (.js-reveal-root) is only
-	   the trigger watched by IntersectionObserver. The actual
-	   motion lives on .reveal-item children, which get a small
-	   staggered delay in JS so cards settle into place one after
-	   another instead of all snapping in together. */
+	/* Reveal system */
 	.reveal-item {
 		opacity: 0;
 		transform: translateY(18px) scale(0.97);
@@ -155,9 +151,7 @@
 		filter: blur(0);
 	}
 
-	/* Blur-up for lazy-loaded photos. Starts soft and slightly
-	   oversized, sharpens and settles the moment the browser
-	   actually finishes loading it, while scrolling past. */
+	/* Blur-up for lazy-loaded photos */
 	.pw-blur-up {
 		filter: blur(16px);
 		transform: scale(1.08);
@@ -171,7 +165,7 @@
 		opacity: 1;
 	}
 
-	/* Houses preview grid */
+	/* ── Houses preview grid — hover effects ──────────────────────── */
 	.pw-preview-grid {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -190,11 +184,32 @@
 		border: 1px solid var(--pw-border);
 		border-radius: 12px;
 		overflow: hidden;
-		transition: border-color 200ms ease;
+		position: relative;
+		transition: transform 350ms var(--pw-ease-out), box-shadow 350ms var(--pw-ease-out);
+	}
+
+	.pw-preview-card::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: 12px;
+		padding: 1px;
+		background: linear-gradient(180deg, rgba(201,168,76,0) 0%, rgba(201,168,76,0) 100%);
+		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		pointer-events: none;
+		transition: background 350ms var(--pw-ease-out);
+		z-index: 2;
 	}
 
 	.pw-preview-card:hover {
-		border-color: var(--pw-gold);
+		transform: translateY(-4px);
+		box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,168,76,0.15);
+	}
+
+	.pw-preview-card:hover::before {
+		background: linear-gradient(180deg, rgba(201,168,76,0.5) 0%, rgba(201,168,76,0) 60%);
 	}
 
 	.pw-preview-photo {
@@ -206,12 +221,34 @@
 		justify-content: center;
 		color: var(--pw-muted);
 		overflow: hidden;
+		position: relative;
 	}
 
 	.pw-preview-photo img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+		transition: transform 500ms var(--pw-ease-out);
+	}
+
+	.pw-preview-card:hover .pw-preview-photo img {
+		transform: scale(1.05);
+	}
+
+	.pw-preview-badge {
+		position: absolute;
+		top: 12px;
+		left: 12px;
+		background: rgba(13, 13, 13, 0.7);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		border: 1px solid rgba(245, 245, 240, 0.08);
+		border-radius: 6px;
+		padding: 4px 10px;
+		font-size: 11px;
+		font-weight: 500;
+		color: var(--pw-green);
+		z-index: 1;
 	}
 
 	.pw-preview-body {
@@ -238,6 +275,13 @@
 		margin-bottom: 0.5rem;
 	}
 
+	.pw-preview-body .p-price span {
+		font-family: "DM Sans", sans-serif;
+		font-size: 12px;
+		color: var(--pw-muted);
+		font-weight: 400;
+	}
+
 	.pw-preview-link {
 		font-size: 13px;
 		color: var(--pw-gold);
@@ -258,11 +302,12 @@
 		font-size: 14px;
 		font-weight: 500;
 		gap: 6px;
-		transition: border-color 200ms ease;
+		transition: border-color 200ms ease, background 200ms ease;
 	}
 
 	.pw-preview-more-card:hover {
 		border-color: var(--pw-gold);
+		background: rgba(201, 168, 76, 0.04);
 	}
 
 	.pw-preview-empty {
@@ -324,7 +369,7 @@
 		margin: 0;
 	}
 
-	/* Life on the Plot, the one glass-card signature moment */
+	/* Life on the Plot */
 	.pw-glass-section {
 		overflow: hidden;
 	}
@@ -383,7 +428,7 @@
 		margin: 0;
 	}
 
-	/* How it works, numbered list with connecting line */
+	/* How it works */
 	.pw-process {
 		position: relative;
 		padding-left: 36px;
@@ -745,7 +790,7 @@
 			Real answers from a real caretaker, not a call centre.
 		</p>
 		<div class="pw-hero-cta-row">
-			<a href="{% url 'houses_list' %}" class="btn-gold">Browse available houses</a>
+			<a href="{% url 'houses_list' %}" class="btn-gold" target="_self">Browse available houses</a>
 			<button type="button" class="btn-outline-gold pw-hero-contact-btn" onclick="document.getElementById('contact-section').scrollIntoView({behavior:'smooth'})">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -766,8 +811,9 @@
 		<div class="pw-preview-grid">
 			{% if preview_houses %}
 				{% for house in preview_houses %}
-				<a href="{% url 'house_detail' house.house_id %}" class="pw-preview-card reveal-item">
+				<a href="{% url 'house_detail' house.house_id %}" class="pw-preview-card reveal-item" target="_self">
 					<div class="pw-preview-photo">
+						<span class="pw-preview-badge">Available</span>
 						{% if house.photo %}
 							<img class="pw-blur-up" src="{{ house.photo.url }}" alt="House {{ house.house_id }}" loading="lazy" onload="this.classList.add('img-loaded')">
 						{% elif house.gallery_photos.first %}
@@ -783,7 +829,7 @@
 					<div class="pw-preview-body">
 						<div class="p-id">House {{ house.house_id }}</div>
 						<div class="p-meta">{{ house.get_house_type_display }} · {{ house.get_electricity_type_display }}</div>
-						<div class="p-price">KSh {{ house.monthly_rent|floatformat:0|intcomma }}/mo</div>
+						<div class="p-price">KSh {{ house.monthly_rent|floatformat:0|intcomma }} <span>/ month</span></div>
 						<span class="pw-preview-link">View house →</span>
 					</div>
 				</a>
@@ -792,7 +838,12 @@
 				<div class="pw-preview-empty reveal-item">All houses are occupied right now. Check back soon.</div>
 			{% endif %}
 
-			<a href="{% url 'houses_list' %}" class="pw-preview-more-card reveal-item">View all houses →</a>
+			<a href="{% url 'houses_list' %}" class="pw-preview-more-card reveal-item" target="_self">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+				</svg>
+				View all houses
+			</a>
 		</div>
 	</div>
 </div>
@@ -891,7 +942,7 @@
 				<div class="pw-process-dot">01</div>
 				<h4>Browse the houses</h4>
 				<p>See photos, prices, and deposits for every open house on the plot.</p>
-				<a href="{% url 'houses_list' %}" class="pw-process-cta-link">Browse now →</a>
+				<a href="{% url 'houses_list' %}" class="pw-process-cta-link" target="_self">Browse now →</a>
 			</div>
 			<div class="pw-process-step reveal-item">
 				<div class="pw-process-dot">02</div>
@@ -1010,7 +1061,7 @@
 	<div class="pw-section-wrap reveal-item">
 		<h2>Find your next home on this plot.</h2>
 		<p>Already living here? Sign in to see your bills.</p>
-		<a href="{% url 'houses_list' %}" class="btn-gold">Browse available houses</a>
+		<a href="{% url 'houses_list' %}" class="btn-gold" target="_self">Browse available houses</a>
 	</div>
 </div>
 
@@ -1019,9 +1070,9 @@
 		<div class="pw-footer-grid">
 			<div class="pw-footer-col">
 				<h5>For Tenants</h5>
-				<a href="{% url 'houses_list' %}">Browse houses</a>
+				<a href="{% url 'houses_list' %}" target="_self">Browse houses</a>
 				<button onclick="signInUser()">Sign in</button>
-				<a href="/tenant/">Report an issue</a>
+				<a href="/tenant/" target="_self">Report an issue</a>
 			</div>
 			<div class="pw-footer-col">
 				<h5>Get In Touch</h5>
@@ -1031,7 +1082,7 @@
 			</div>
 			<div class="pw-footer-col">
 				<h5>PlotWatch</h5>
-				<a href="/">Home</a>
+				<a href="/" target="_self">Home</a>
 			</div>
 		</div>
 
@@ -1049,7 +1100,7 @@
 		const item = button.closest('.pw-faq-item');
 		const wasOpen = item.classList.contains('open');
 
-		document.querySelectorAll('#faq-list .pw-faq-item').forEach(function (faqItem) {
+		document.querySelectorAll('.pw-faq-item').forEach(function (faqItem) {
 			faqItem.classList.remove('open');
 		});
 
@@ -1058,10 +1109,6 @@
 		}
 	}
 
-	// Staggered scroll reveal. Each section is watched once. The
-	// moment it enters the viewport, every .reveal-item inside it
-	// gets a small increasing delay, so cards settle into place
-	// one after another instead of snapping in all at once.
 	document.addEventListener('DOMContentLoaded', function () {
 		const roots = document.querySelectorAll('.js-reveal-root');
 
@@ -1086,8 +1133,6 @@
 		roots.forEach(root => observer.observe(root));
 	});
 
-	// If someone arrived via a link carrying #contact-section,
-	// scroll there once the page has settled.
 	window.addEventListener('load', function() {
 		if (window.location.hash === '#contact-section') {
 			setTimeout(function() {

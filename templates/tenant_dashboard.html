@@ -7,7 +7,7 @@
   .pw-dashboard {
     max-width: 680px;
     margin: 0 auto;
-    padding: 1.5rem 1rem 6rem;
+    padding: 6.5rem 1rem 6rem;
   }
 
   /* Profile row */
@@ -530,7 +530,7 @@
     min-height: 52px;
   }
 
-  .pw-submit-btn:hover { background: var(--pw-gold-light); }
+  .pw-submit-btn:hover { background: var(--pw-gold-light); color: #0D0D0D; }
   .pw-submit-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -577,7 +577,7 @@
 {% block content %}
 
 <!-- Loading state -->
-<div id="pw-loading" style="max-width:680px;margin:0 auto;padding:1.5rem 1rem;">
+<div id="pw-loading" style="max-width:680px;margin:0 auto;padding:6.5rem 1rem 1.5rem;">
   <div class="pw-skeleton"></div>
   <div class="pw-skeleton" style="height:80px;"></div>
   <div class="pw-skeleton"></div>
@@ -981,10 +981,15 @@ function formatDateLong(dateStr) {
 
 function openClerkProfile() {
   closeInfoModal();
-  if (window.Clerk && window.Clerk.openUserProfile) {
+  if (!window.Clerk || !window.Clerk.openUserProfile) {
+    alert("Account management is still loading. Wait a moment and try again.");
+    return;
+  }
+  try {
     window.Clerk.openUserProfile();
-  } else {
-    alert('Account management is still loading. Wait a moment and try again.');
+  } catch (err) {
+    alert("Clerk error: " + (err && err.message ? err.message : err));
+    console.error(err);
   }
 }
 
@@ -1001,6 +1006,12 @@ function showProfileSheet() {
     openInfoModal('Your Profile');
     return;
   }
+
+  const household = dashboardData.household_members || [];
+  const householdHtml = household.length
+    ? household.map(m => `<div class="pw-detail-row"><span class="label">${m.relationship}</span><span class="value">${m.full_name}</span></div>`).join('')
+    : `<div class="pw-detail-row"><span class="label">Living situation</span><span class="value">Lives alone</span></div>`;
+
   document.getElementById('info-modal-body').innerHTML = `
     <div class="pw-detail-row"><span class="label">Full name</span><span class="value">${p.full_name}</span></div>
     <div class="pw-detail-row"><span class="label">Email</span><span class="value">${p.email}</span></div>
@@ -1009,6 +1020,7 @@ function showProfileSheet() {
     <div class="pw-detail-row"><span class="label">Emergency contact</span><span class="value">${p.emergency_contact_name || '--'}</span></div>
     <div class="pw-detail-row"><span class="label">Emergency phone</span><span class="value">${p.emergency_contact_phone || '--'}</span></div>
     <div class="pw-detail-row"><span class="label">Tenant since</span><span class="value">${formatDateLong(p.move_in_date)}</span></div>
+    ${householdHtml}
     <button class="pw-submit-btn" style="margin-top:1.25rem;" onclick="openClerkProfile()">Manage account &amp; photo</button>
   `;
   openInfoModal('Your Profile');

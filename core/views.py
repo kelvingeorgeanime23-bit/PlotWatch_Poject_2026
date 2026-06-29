@@ -5,6 +5,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.contrib.auth import login as django_login
 from django.contrib.auth.models import User
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
+from django.urls import reverse
+from datetime import date, timedelta
 from .models import Tenant, Landlord, Payment, WaterBill, ElectricityBill, MaintenanceRequest, House, HousePhoto, ContactMessage
 import json
 
@@ -98,7 +102,6 @@ def tenant_dashboard_api(request):
 	except Tenant.DoesNotExist:
 		return JsonResponse({'error': 'Tenant not found'}, status=404)
 
-	from datetime import date
 	today = date.today()
 	current_month = today.replace(day=1)
 
@@ -114,8 +117,6 @@ def tenant_dashboard_api(request):
 
 	# Water, this month, summed across every entry. Water is
 	# collected weekly, so a single month can have several rows.
-	# The old version grabbed only one of them with .first(),
-	# which meant the summary card never showed the real total.
 	water_this_month = WaterBill.objects.filter(
 		tenant=tenant,
 		date__month=today.month,
@@ -142,6 +143,11 @@ def tenant_dashboard_api(request):
 				'amount': str(elec.amount),
 				'status': elec.status
 			}
+
+	household_members = [
+		{'full_name': m.full_name, 'relationship': m.get_relationship_display()}
+		for m in tenant.household_members.all()
+	]
 
 	# Profile details for the profile sheet.
 	profile_data = {
@@ -207,6 +213,7 @@ def tenant_dashboard_api(request):
 		'rent': rent_data,
 		'water': water_data,
 		'electricity': elec_data,
+		'household_members': household_members,
 		'profile': profile_data,
 		'house_detail': house_detail_data,
 		'rent_history': rent_history,
@@ -273,7 +280,6 @@ def landlord_dashboard_api(request):
 	except Landlord.DoesNotExist:
 		return JsonResponse({'error': 'Landlord not found'}, status=404)
 
-	from datetime import date
 	today = date.today()
 	current_month = today.replace(day=1)
 
@@ -319,6 +325,7 @@ def landlord_dashboard_api(request):
 					'email': tenant.email,
 					'phone_number': tenant.phone_number,
 					'move_in_date': str(tenant.move_in_date),
+					'household_members': [{'full_name': m.full_name, 'relationship': m.get_relationship_display()} for m in tenant.household_members.all()],
 					'rent': {'amount': str(rent.amount), 'status': rent.status} if rent else None,
 					'water': {'amount': str(water.amount), 'status': water.status} if water else None,
 					'electricity': {'amount': str(elec.amount), 'status': elec.status} if elec else None,
@@ -399,9 +406,7 @@ def contact_message_api(request):
 	required, anyone reaches this. Saved straight to the database
 	and read in Django admin, since there's no email server set
 	up. is_tenant and house_number let Vanessa tell at a glance
-	whether a message is from a current tenant or a stranger,
-	since an email address alone never tells her that. The house
-	number is only required when the tenant toggle is on.
+	whether a message is from a current tenant or a stranger.
 	"""
 	try:
 		body = json.loads(request.body)
@@ -431,3 +436,173 @@ def contact_message_api(request):
 
 	except Exception:
 		return JsonResponse({'error': 'Server error'}, status=500)
+
+
+def get_most_recent_tuesday(reference_date=None):
+	"""
+	Returns the most recent Tuesday on or before the given date,
+	or today if no date is given. Water day is always Tuesday, so
+	this gives a sensible default whichever day Vanessa happens
+	to open the water entry screen.
+	"""
+	reference_date = reference_date or date.today()
+	days_since_tuesday = (reference_date.weekday() - 1) % 7
+	return reference_date - timedelta(days=days_since_tuesday)
+
+
+def _parse_quantity(raw_value):
+	"""
+	Turns a form field's raw text into a safe non-negative int.
+	Blank, missing, or garbage input all become 0 rather than
+	raising an error and breaking the whole save.
+	"""
+	try:
+		value = int(raw_value)
+		return value if value > 0 else 0
+	except (TypeError, ValueError):
+		return 0
+
+
+@staff_member_required
+def admin_water_entry(request):
+	"""
+	Lets Vanessa enter the entire week's water round on one
+	screen, one row per active tenant, instead of opening a
+	separate Django admin form for each person every Tuesday.
+	Saving creates, updates, or clears the WaterBill rows for
+	whichever date is selected, defaulting to the most recent
+	Tuesday.
+	"""
+	if request.method == 'POST':
+		date_str = request.POST.get('entry_date')
+		try:
+			entry_date = date.fromisoformat(date_str)
+		except (TypeError, ValueError):
+			entry_date = get_most_recent_tuesday()
+
+		tenants = Tenant.objects.filter(is_active=True, house__isnull=False)
+
+		for tenant in tenants:
+			qty_20 = _parse_quantity(request.POST.get(f'qty20_{tenant.id}', ''))
+			qty_10 = _parse_quantity(request.POST.get(f'qty10_{tenant.id}', ''))
+			is_paid = request.POST.get(f'paid_{tenant.id}') == 'on'
+			status = 'paid' if is_paid else 'pending'
+			date_paid = entry_date if is_paid else None
+
+			if qty_20 > 0:
+				WaterBill.objects.update_or_create(
+					tenant=tenant, date=entry_date, jerrican_type='20L',
+					defaults={
+						'quantity': qty_20,
+						'amount': qty_20 * 10,
+						'status': status,
+						'date_paid': date_paid,
+					}
+				)
+			else:
+				WaterBill.objects.filter(tenant=tenant, date=entry_date, jerrican_type='20L').delete()
+
+			if qty_10 > 0:
+				WaterBill.objects.update_or_create(
+					tenant=tenant, date=entry_date, jerrican_type='10L',
+					defaults={
+						'quantity': qty_10,
+						'amount': qty_10 * 5,
+						'status': status,
+						'date_paid': date_paid,
+					}
+				)
+			else:
+				WaterBill.objects.filter(tenant=tenant, date=entry_date, jerrican_type='10L').delete()
+
+		messages.success(request, f"Water entries saved for {entry_date.strftime('%A, %d %B %Y')}.")
+		return redirect(f"{reverse('admin_water_entry')}?date={entry_date.isoformat()}")
+
+	date_param = request.GET.get('date')
+	if date_param:
+		try:
+			entry_date = date.fromisoformat(date_param)
+		except ValueError:
+			entry_date = get_most_recent_tuesday()
+	else:
+		entry_date = get_most_recent_tuesday()
+
+	tenants = Tenant.objects.filter(is_active=True, house__isnull=False).select_related('house').order_by('house__house_id')
+
+	existing_bills = WaterBill.objects.filter(date=entry_date)
+	existing_map = {}
+	for bill in existing_bills:
+		existing_map.setdefault(bill.tenant_id, {})[bill.jerrican_type] = bill
+
+	rows = []
+	for tenant in tenants:
+		tenant_bills = existing_map.get(tenant.id, {})
+		bill_20 = tenant_bills.get('20L')
+		bill_10 = tenant_bills.get('10L')
+		is_paid = True
+		if tenant_bills:
+			is_paid = all(b.status == 'paid' for b in tenant_bills.values())
+		rows.append({
+			'tenant': tenant,
+			'qty_20': bill_20.quantity if bill_20 else '',
+			'qty_10': bill_10.quantity if bill_10 else '',
+			'is_paid': is_paid,
+		})
+
+	context = {
+		'entry_date': entry_date,
+		'rows': rows,
+		'prev_date': entry_date - timedelta(days=7),
+		'next_date': entry_date + timedelta(days=7),
+	}
+	return render(request, 'admin/water_entry.html', context)
+
+
+@staff_member_required
+def admin_overview(request):
+	"""
+	One screen showing what's actually due or open right now:
+	rent not yet collected this month, who hasn't bought water
+	this week, and every open maintenance issue. Reads live off
+	the existing tables, nothing extra stored.
+	"""
+	today = date.today()
+	current_month = today.replace(day=1)
+	most_recent_tuesday = get_most_recent_tuesday()
+
+	occupied_tenants = Tenant.objects.filter(is_active=True, house__isnull=False).select_related('house')
+
+	rent_rows = []
+	for tenant in occupied_tenants:
+		payment = Payment.objects.filter(tenant=tenant, month=current_month).first()
+		rent_rows.append({
+			'tenant': tenant,
+			'house_id': tenant.house.house_id,
+			'amount': payment.amount if payment else tenant.house.monthly_rent,
+			'status': payment.status if payment else 'not entered',
+		})
+
+	pending_rent = [r for r in rent_rows if r['status'] in ('pending', 'overdue', 'not entered')]
+
+	paid_tenant_ids_this_week = set(
+		WaterBill.objects.filter(date=most_recent_tuesday).values_list('tenant_id', flat=True)
+	)
+	not_bought_water = []
+	for tenant in occupied_tenants:
+		if tenant.id not in paid_tenant_ids_this_week:
+			not_bought_water.append({
+				'tenant': tenant,
+				'house_id': tenant.house.house_id,
+			})
+
+	open_issues = MaintenanceRequest.objects.filter(status='open').select_related('tenant', 'tenant__house').order_by('created_at')
+
+	context = {
+		'today': today,
+		'most_recent_tuesday': most_recent_tuesday,
+		'pending_rent': pending_rent,
+		'total_occupied': occupied_tenants.count(),
+		'not_bought_water': not_bought_water,
+		'open_issues': open_issues,
+	}
+	return render(request, 'admin/overview.html', context)
