@@ -29,13 +29,36 @@ def home(request):
 
 
 def dashboard(request):
-	"""
-	Role-based redirect hub.
-	Clerk sends everyone here after sign in.
-	Django checks the Clerk user ID against the database
-	and redirects to the correct dashboard.
-	"""
-	return render(request, 'dashboard.html')
+    """
+    Role-based redirect hub.
+    Clerk sends everyone here after sign in.
+    Django checks the Clerk user ID and redirects immediately.
+    """
+    clerk_user_id = getattr(request, 'clerk_user_id', None)
+    
+    if not clerk_user_id:
+        return render(request, 'dashboard.html')
+    
+    # Check if admin
+    if settings.ADMIN_CLERK_USER_ID and clerk_user_id == settings.ADMIN_CLERK_USER_ID:
+        if not (request.user.is_authenticated and request.user.is_staff):
+            try:
+                admin_user = User.objects.get(username='vanessa', is_staff=True)
+                django_login(request, admin_user)
+            except User.DoesNotExist:
+                pass
+        return redirect('/admin/')
+    
+    # Check if tenant
+    if Tenant.objects.filter(clerk_user_id=clerk_user_id, is_active=True).exists():
+        return redirect('/tenant/')
+    
+    # Check if landlord
+    if Landlord.objects.filter(clerk_user_id=clerk_user_id).exists():
+        return redirect('/landlord/')
+    
+    # Unregistered - show dashboard with "unregistered" message
+    return render(request, 'dashboard.html')
 
 
 def tenant_dashboard(request):
