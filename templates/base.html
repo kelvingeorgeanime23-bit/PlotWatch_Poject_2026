@@ -293,7 +293,7 @@
           alert("Authentication is loading. Wait a moment and try again.");
           return;
         }
-        const redirectUrl = encodeURIComponent(window.location.origin + "/dashboard/");
+        const redirectUrl = encodeURIComponent("https://plotwatch.up.railway.app/dashboard/");
         window.location.href = `${CLERK_ACCOUNTS_URL}/sign-in?redirect_url=${redirectUrl}`;
       }
 
@@ -302,7 +302,7 @@
           alert("Authentication is loading. Wait a moment and try again.");
           return;
         }
-        const redirectUrl = encodeURIComponent(window.location.origin + "/dashboard/");
+        const redirectUrl = encodeURIComponent("https://plotwatch.up.railway.app/dashboard/");
         window.location.href = `${CLERK_ACCOUNTS_URL}/sign-up?redirect_url=${redirectUrl}`;
       }
 
