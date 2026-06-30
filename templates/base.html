@@ -301,8 +301,8 @@ function signUpUser() {
         alert("Authentication is loading. Wait a moment and try again.");
         return;
     }
-    window.Clerk.openSignUP({
-        afterSignInUrl: "https://plotwatch.up.railway.app/dashboard/",
+    window.Clerk.openSignUp({
+        afterSignUpUrl: "https://plotwatch.up.railway.app/dashboard/",
         redirectUrl: "https://plotwatch.up.railway.app/dashboard/"
     });
 }
