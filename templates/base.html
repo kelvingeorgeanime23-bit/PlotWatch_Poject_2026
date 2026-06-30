@@ -272,10 +272,7 @@
             authArea.innerHTML = "";
           } else {
             authArea.innerHTML = `
-              <div style="display:flex; align-items:center; gap:12px;">
-                <span style="color:var(--pw-muted); font-size:14px;">${window.Clerk.user.primaryEmailAddress?.emailAddress || ""}</span>
-                <button class="btn-outline-gold" onclick="signOutUser()">Sign out</button>
-              </div>
+              <button class="btn-outline-gold" onclick="signOutUser()">Sign out</button>
             `;
           }
         } else {
@@ -304,7 +301,7 @@ function signUpUser() {
         alert("Authentication is loading. Wait a moment and try again.");
         return;
     }
-    window.Clerk.openSignIn({
+    window.Clerk.openSignUP({
         afterSignInUrl: "https://plotwatch.up.railway.app/dashboard/",
         redirectUrl: "https://plotwatch.up.railway.app/dashboard/"
     });
