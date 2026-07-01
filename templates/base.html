@@ -275,6 +275,14 @@
   }, 3000);
 }
 
+      (function checkPendingToast() {
+          const msg = localStorage.getItem('pw_toast');
+          if (msg) {
+              localStorage.removeItem('pw_toast');
+              setTimeout(() => showToast(msg), 800);
+          }
+      })();
+
       const CLERK_ACCOUNTS_URL = "{{ clerk_accounts_url }}";
       let clerkReady = false;
 
@@ -292,6 +300,18 @@
   allowedRedirectOrigins: [window.location.origin]
 });
           clerkReady = true;
+
+          window.Clerk.addListener(({ user, session }) => {
+              if (session && session.status === 'active' && user) {
+                  const isNew = user.createdAt && (Date.now() - new Date(user.createdAt).getTime()) < 10000;
+                  if (isNew) {
+                      localStorage.setItem('pw_toast', 'Account created successfully');
+                  } else {
+                      localStorage.setItem('pw_toast', 'Successfully signed in');
+                  }
+              }
+          });
+
         } catch (e) {
           console.error("Clerk load failed:", e);
           document.getElementById("nav-auth-area").innerHTML = `
@@ -338,7 +358,6 @@ function signInUser() {
         afterSignInUrl: "https://plotwatch.up.railway.app/dashboard/",
         redirectUrl: "https://plotwatch.up.railway.app/dashboard/"
     });
-    showToast("Successfully signed in");
 }
 
 function signUpUser() {
@@ -350,7 +369,6 @@ function signUpUser() {
         afterSignUpUrl: "https://plotwatch.up.railway.app/dashboard/",
         redirectUrl: "https://plotwatch.up.railway.app/dashboard/"
     });
-    showToast("Account created successfully");
 }
 
       function signOutUser() {
