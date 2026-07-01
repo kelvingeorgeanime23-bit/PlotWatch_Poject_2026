@@ -34,6 +34,27 @@
 		margin-bottom: 12px;
 		overflow: hidden;
 		transition: border-color 200ms ease;
+		opacity: 0;
+		transform: translateY(24px);
+		animation: cardEnter 500ms ease forwards;
+	}
+
+	.pw-house-card:nth-child(1) { animation-delay: 0ms; }
+	.pw-house-card:nth-child(2) { animation-delay: 80ms; }
+	.pw-house-card:nth-child(3) { animation-delay: 160ms; }
+	.pw-house-card:nth-child(4) { animation-delay: 240ms; }
+	.pw-house-card:nth-child(5) { animation-delay: 320ms; }
+	.pw-house-card:nth-child(6) { animation-delay: 400ms; }
+	.pw-house-card:nth-child(7) { animation-delay: 480ms; }
+	.pw-house-card:nth-child(8) { animation-delay: 560ms; }
+	.pw-house-card:nth-child(9) { animation-delay: 640ms; }
+	.pw-house-card:nth-child(10) { animation-delay: 720ms; }
+
+	@keyframes cardEnter {
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.pw-house-card:hover {
@@ -54,12 +75,31 @@
 		color: var(--pw-muted);
 		font-size: 14px;
 		overflow: hidden;
+		position: relative;
 	}
 
 	.pw-house-card .house-photo img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+
+	/* Photo count badge */
+	.photo-count-badge {
+		position: absolute;
+		bottom: 10px;
+		right: 10px;
+		background: rgba(13, 13, 13, 0.8);
+		backdrop-filter: blur(4px);
+		color: var(--pw-white);
+		font-size: 12px;
+		padding: 4px 10px;
+		border-radius: 20px;
+		border: 1px solid var(--pw-border);
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		z-index: 2;
 	}
 
 	.pw-blur-up {
@@ -110,6 +150,22 @@
 		font-family: "Playfair Display", serif;
 		font-size: 1.3rem;
 		color: var(--pw-gold);
+	}
+
+	/* View details hint */
+	.view-details-hint {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		color: var(--pw-muted);
+		margin-top: 0.75rem;
+		transition: color 200ms ease, gap 200ms ease;
+	}
+
+	.house-card-link:hover .view-details-hint {
+		color: var(--pw-gold);
+		gap: 10px;
 	}
 
 	.pw-house-card .house-contact {
@@ -214,6 +270,17 @@
 							<path d="M21 15l-5-5L5 21"/>
 						</svg>
 					{% endif %}
+
+					{% if house.gallery_photos.count > 0 %}
+					<div class="photo-count-badge">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2"/>
+							<circle cx="8.5" cy="8.5" r="1.5"/>
+							<path d="M21 15l-5-5L5 21"/>
+						</svg>
+						{{ house.gallery_photos.count|add:1 }} photos
+					</div>
+					{% endif %}
 				</div>
 				<div class="house-body">
 					<div class="house-id">House {{ house.house_id }}</div>
@@ -232,6 +299,14 @@
 
 					<div class="house-price">
 						KSh {{ house.monthly_rent|floatformat:0|intcomma }} / month
+					</div>
+
+					<div class="view-details-hint">
+						View details
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="5" y1="12" x2="19" y2="12"/>
+							<polyline points="12 5 19 12 12 19"/>
+						</svg>
 					</div>
 				</div>
 			</a>
