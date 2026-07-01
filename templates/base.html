@@ -216,11 +216,41 @@
       .text-muted-pw {
         color: var(--pw-muted);
       }
+
+      .toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--pw-surface);
+  border: 1px solid var(--pw-green);
+  color: var(--pw-green);
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: "DM Sans", sans-serif;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease;
+  min-width: 250px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
     </style>
 
     {% block extra_css %}{% endblock %}
   </head>
   <body>
+    <div class="toast-container" id="toast-container"></div>
     <nav class="pw-navbar" id="pw-navbar">
       <a href="/" class="brand">PlotWatch</a>
       <div id="nav-auth-area">
@@ -231,6 +261,20 @@
     <main>{% block content %}{% endblock %}</main>
 
     <script>
+
+      function showToast(message) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
       const CLERK_ACCOUNTS_URL = "{{ clerk_accounts_url }}";
       let clerkReady = false;
 
@@ -285,36 +329,41 @@
         }
       }
 
-      function signInUser() {
+function signInUser() {
     if (!clerkReady) {
-        alert("Authentication is loading. Wait a moment and try again.");
-        return;
+      alert("Authentication is loading. Wait a moment and try again.");
+      return;
     }
     window.Clerk.openSignIn({
         afterSignInUrl: "https://plotwatch.up.railway.app/dashboard/",
         redirectUrl: "https://plotwatch.up.railway.app/dashboard/"
     });
+    showToast("Successfully signed in");
 }
 
 function signUpUser() {
     if (!clerkReady) {
-        alert("Authentication is loading. Wait a moment and try again.");
-        return;
+      alert("Authentication is loading. Wait a moment and try again.");
+      return;
     }
     window.Clerk.openSignUp({
         afterSignUpUrl: "https://plotwatch.up.railway.app/dashboard/",
         redirectUrl: "https://plotwatch.up.railway.app/dashboard/"
     });
+    showToast("Account created successfully");
 }
 
       function signOutUser() {
-        if (!clerkReady || !window.Clerk?.signOut) {
-          return;
-        }
-        window.Clerk.signOut().then(() => {
-          window.location.href = "/";
-        });
-      }
+    if (!clerkReady || !window.Clerk?.signOut) {
+      return;
+    }
+    window.Clerk.signOut().then(() => {
+      showToast("Signed out successfully");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 800);
+    });
+}
 
       if (document.readyState === "complete") {
         initClerk();
